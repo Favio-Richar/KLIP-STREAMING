@@ -8,7 +8,7 @@ Formato: `- [ ] ID título` → `- [x] ID título — AAAA-MM-DD — resultado`
 
 - [x] F0-01 Repositorio y monorepo — 2026-11-22 — git, pnpm+turbo, workspace uv (Python 3.12), pre-commit (ruff, gitleaks, prettier), estructura de docs/03 §7
 - [x] F0-02 Infraestructura local — 2026-11-22 — compose perfil core (postgres17+pgvector, redis, minio+bucket, mediamtx) sano; puertos 5434/6381
-- [ ] F0-03 Skills de diseño
+- [x] F0-03 Skills de diseño — 2026-11-22 — skills verificadas (huashu-design ausente, no bloquea); MASTER.md generado y reconciliado con docs/08; DESIGN.md creado
 - [ ] F0-04 Scripts raíz
 - [ ] F0-05 Esqueleto de API
 - [ ] F0-06 Capa de datos
