@@ -1,0 +1,36 @@
+# secrets
+.env
+.env.*
+!.env.example
+# python
+__pycache__/
+*.py[cod]
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+# node
+node_modules/
+.next/
+.turbo/
+dist/
+coverage/
+out/
+*.tsbuildinfo
+playwright-report/
+test-results/
+# tauri
+apps/desktop/src-tauri/target/
+# os / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+# local data
+/data/
+*.log
+.claude/settings.local.json
