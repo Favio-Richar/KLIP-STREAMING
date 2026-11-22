@@ -39,8 +39,8 @@ GPU: `pnpm infra:up -- --profile gpu` levanta `worker-ai`. Verificar con `docker
 |---|---|
 | web | 3000 |
 | api | 8000 |
-| postgres | 5432 |
-| redis | 6379 |
+| postgres | 5434 |
+| redis | 6381 |
 | minio (S3 / consola) | 9000 / 9001 |
 | mediamtx RTMP / SRT / API | 1935 / 8890 / 9997 |
 | grafana (perfil observability) | 3001 |

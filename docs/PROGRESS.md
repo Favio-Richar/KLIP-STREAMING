@@ -7,7 +7,7 @@ Formato: `- [ ] ID título` → `- [x] ID título — AAAA-MM-DD — resultado`
 ## F0 — Fundaciones
 
 - [x] F0-01 Repositorio y monorepo — 2026-11-22 — git, pnpm+turbo, workspace uv (Python 3.12), pre-commit (ruff, gitleaks, prettier), estructura de docs/03 §7
-- [ ] F0-02 Infraestructura local
+- [x] F0-02 Infraestructura local — 2026-11-22 — compose perfil core (postgres17+pgvector, redis, minio+bucket, mediamtx) sano; puertos 5434/6381
 - [ ] F0-03 Skills de diseño
 - [ ] F0-04 Scripts raíz
 - [ ] F0-05 Esqueleto de API
