@@ -1,13 +1,15 @@
-import re
 import uuid
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
-from dataclasses import dataclass
-from typing import Any
 
 import asyncpg
-import httpx
 import pytest
+from actors import (
+    BASE,
+    Users,
+    _client,
+    add_member,
+    create_org,
+    invite_token,
+)
 from harness import ApiHarness
 from klick.core.config import Settings
 from klick.core.db import Database
@@ -18,11 +20,8 @@ from sqlalchemy.engine import make_url
 
 pytestmark = pytest.mark.db
 
-PASSWORD = "correct-horse-battery"
 # Para invitar a un viewer, el token debe tener también los permisos que ese rol otorga.
 VIEWER_GRANT_SCOPES = ["members:manage", "media:read", "clips:read", "analytics:read"]
-BASE = "/api/v1"
-UNSAFE = {"POST", "PUT", "PATCH", "DELETE"}
 
 
 def _dsn(url: str) -> str:
@@ -35,114 +34,6 @@ async def _sql(api: ApiHarness, query: str, *args: object) -> list[asyncpg.Recor
         return await conn.fetch(query, *args)
     finally:
         await conn.close()
-
-
-@dataclass
-class Actor:
-    client: httpx.AsyncClient
-    email: str
-    csrf: str
-    user_id: str
-
-    async def call(
-        self,
-        method: str,
-        path: str,
-        *,
-        org: str | uuid.UUID | None = None,
-        json: Any = None,
-        token: str | None = None,
-        headers: dict[str, str] | None = None,
-    ) -> httpx.Response:
-        h = dict(headers or {})
-        if org is not None:
-            h["X-Org-ID"] = str(org)
-        if token:
-            h["Authorization"] = f"Bearer {token}"
-        elif method in UNSAFE:
-            h["X-CSRF-Token"] = self.csrf
-        return await self.client.request(method, f"{BASE}{path}", json=json, headers=h)
-
-
-@asynccontextmanager
-async def _client(api: ApiHarness) -> AsyncIterator[httpx.AsyncClient]:
-    transport = httpx.ASGITransport(app=api.app, raise_app_exceptions=False)
-    async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as c:
-        yield c
-
-
-class Users:
-    """Fábrica de usuarios verificados y con sesión iniciada, cada uno con su propio cliente."""
-
-    def __init__(self, api: ApiHarness) -> None:
-        self.api = api
-        self._clients: list[httpx.AsyncClient] = []
-
-    async def make(self, email: str, *, verify: bool = True) -> Actor:
-        transport = httpx.ASGITransport(app=self.api.app, raise_app_exceptions=False)
-        client = httpx.AsyncClient(transport=transport, base_url="http://testserver")
-        self._clients.append(client)
-        r = await client.post(
-            f"{BASE}/auth/register",
-            json={
-                "email": email,
-                "password": PASSWORD,
-                "display_name": email.split("@")[0].title(),
-            },
-        )
-        assert r.status_code == 202, r.text
-        if verify:
-            mail = next(
-                m for m in self.api.emails.sent if m.to == email and "verify-email" in m.body
-            )
-            token = re.search(r"token=([\w\-]+)", mail.body)
-            assert token
-            v = await client.post(f"{BASE}/auth/email/verify", json={"token": token.group(1)})
-            assert v.status_code == 204
-        login = await client.post(f"{BASE}/auth/login", json={"email": email, "password": PASSWORD})
-        assert login.status_code == 200, login.text
-        data = login.json()
-        return Actor(client, email, data["csrf_token"], data["user"]["id"])
-
-    async def close(self) -> None:
-        for c in self._clients:
-            await c.aclose()
-
-
-@pytest.fixture
-async def users(api: ApiHarness) -> AsyncIterator[Users]:
-    u = Users(api)
-    yield u
-    await u.close()
-
-
-async def _create_org(
-    actor: Actor, name: str = "Visionary AI", slug: str | None = None
-) -> dict[str, Any]:
-    body: dict[str, Any] = {"name": name}
-    if slug:
-        body["slug"] = slug
-    r = await actor.call("POST", "/orgs", json=body)
-    assert r.status_code == 201, r.text
-    data: dict[str, Any] = r.json()
-    return data
-
-
-def _invite_token(api: ApiHarness, email: str) -> str:
-    mail = [m for m in api.emails.sent if m.to == email and "invitations/accept" in m.body][-1]
-    match = re.search(r"token=([\w\-]+)", mail.body)
-    assert match
-    return match.group(1)
-
-
-async def _add_member(api: ApiHarness, owner: Actor, org_id: str, member: Actor, role: str) -> None:
-    r = await owner.call(
-        "POST", "/invitations", org=org_id, json={"email": member.email, "role": role}
-    )
-    assert r.status_code == 201, r.text
-    token = _invite_token(api, member.email)
-    acc = await member.call("POST", f"/invitations/{token}/accept")
-    assert acc.status_code == 200, acc.text
 
 
 # ------------------------------------------------------------------------------- semillas
@@ -199,7 +90,7 @@ async def test_app_role_cannot_modify_permission_catalog(api: ApiHarness) -> Non
 
 async def test_create_org_makes_creator_owner(api: ApiHarness, users: Users) -> None:
     ana = await users.make("ana@example.com")
-    org = await _create_org(ana, "Visionary AI Group Ñandú")
+    org = await create_org(ana, "Visionary AI Group Ñandú")
     assert org["slug"] == "visionary-ai-group-nandu"
     assert org["role"] == "owner"
     assert set(org["permissions"]) == ALL_PERMISSIONS
@@ -211,8 +102,8 @@ async def test_create_org_makes_creator_owner(api: ApiHarness, users: Users) -> 
 
 async def test_slugs_are_unique(api: ApiHarness, users: Users) -> None:
     ana, bruno = await users.make("ana@example.com"), await users.make("bruno@example.com")
-    first = await _create_org(ana, "Mi Canal")
-    second = await _create_org(bruno, "Mi Canal")  # el nombre repetido recibe un sufijo
+    first = await create_org(ana, "Mi Canal")
+    second = await create_org(bruno, "Mi Canal")  # el nombre repetido recibe un sufijo
     assert first["slug"] == "mi-canal" and second["slug"].startswith("mi-canal-")
     dup = await bruno.call("POST", "/orgs", json={"name": "Otro", "slug": "mi-canal"})
     assert dup.status_code == 409 and dup.json()["code"] == "slug_taken"
@@ -222,7 +113,7 @@ async def test_slugs_are_unique(api: ApiHarness, users: Users) -> None:
 
 async def test_orgs_are_isolated_between_users(api: ApiHarness, users: Users) -> None:
     ana, bruno = await users.make("ana@example.com"), await users.make("bruno@example.com")
-    org_a, org_b = await _create_org(ana, "Org A"), await _create_org(bruno, "Org B")
+    org_a, org_b = await create_org(ana, "Org A"), await create_org(bruno, "Org B")
     assert [o["id"] for o in (await ana.call("GET", "/orgs")).json()] == [org_a["id"]]
     for method, path, org in (
         ("GET", f"/orgs/{org_b['id']}", None),
@@ -239,7 +130,7 @@ async def test_orgs_are_isolated_between_users(api: ApiHarness, users: Users) ->
 
 async def test_org_header_is_required_and_validated(api: ApiHarness, users: Users) -> None:
     ana = await users.make("ana@example.com")
-    await _create_org(ana)
+    await create_org(ana)
     missing = await ana.call("GET", "/members")
     assert missing.status_code == 400 and missing.json()["code"] == "org_required"
     invalid = await ana.call("GET", "/members", org="not-a-uuid")
@@ -250,8 +141,8 @@ async def test_org_header_is_required_and_validated(api: ApiHarness, users: User
 
 async def test_update_org_validates_and_requires_permission(api: ApiHarness, users: Users) -> None:
     ana, vic = await users.make("ana@example.com"), await users.make("vic@example.com")
-    org = await _create_org(ana)
-    await _add_member(api, ana, org["id"], vic, "viewer")
+    org = await create_org(ana)
+    await add_member(api, ana, org["id"], vic, "viewer")
     ok = await ana.call(
         "PATCH",
         f"/orgs/{org['id']}",
@@ -273,13 +164,13 @@ async def test_update_org_validates_and_requires_permission(api: ApiHarness, use
 
 async def test_invited_viewer_can_read_but_not_write(api: ApiHarness, users: Users) -> None:
     ana, vic = await users.make("ana@example.com"), await users.make("vic@example.com")
-    org = await _create_org(ana)
+    org = await create_org(ana)
     inv = await ana.call(
         "POST", "/invitations", org=org["id"], json={"email": "VIC@example.com", "role": "viewer"}
     )
     assert inv.status_code == 201 and inv.json()["email"] == "vic@example.com"
     assert "invitations/accept?token=" in api.emails.sent[-1].body
-    token = _invite_token(api, vic.email)
+    token = invite_token(api, vic.email)
 
     accepted = await vic.call("POST", f"/invitations/{token}/accept")
     assert accepted.status_code == 200
@@ -305,17 +196,17 @@ async def test_invitation_rules(api: ApiHarness, users: Users) -> None:
     vic = await users.make("vic@example.com")
     ghost = await users.make("sinverificar@example.com", verify=False)
     eve = await users.make("eve@example.com")
-    org = await _create_org(ana)
+    org = await create_org(ana)
 
     await ana.call(
         "POST", "/invitations", org=org["id"], json={"email": vic.email, "role": "viewer"}
     )
-    first = _invite_token(api, vic.email)
+    first = invite_token(api, vic.email)
     # reinvitar revoca la anterior
     await ana.call(
         "POST", "/invitations", org=org["id"], json={"email": vic.email, "role": "editor"}
     )
-    second = _invite_token(api, vic.email)
+    second = invite_token(api, vic.email)
     assert first != second
     assert (await vic.call("POST", f"/invitations/{first}/accept")).status_code == 400
     # otra persona con el token no puede usarlo
@@ -327,7 +218,7 @@ async def test_invitation_rules(api: ApiHarness, users: Users) -> None:
         "POST", "/invitations", org=org["id"], json={"email": ghost.email, "role": "viewer"}
     )
     assert (
-        await ghost.call("POST", f"/invitations/{_invite_token(api, ghost.email)}/accept")
+        await ghost.call("POST", f"/invitations/{invite_token(api, ghost.email)}/accept")
     ).status_code == 403
 
     ok = await vic.call("POST", f"/invitations/{second}/accept")
@@ -345,20 +236,20 @@ async def test_invitation_rules(api: ApiHarness, users: Users) -> None:
 
 async def test_invitation_can_be_revoked_and_expires(api: ApiHarness, users: Users) -> None:
     ana, vic = await users.make("ana@example.com"), await users.make("vic@example.com")
-    org = await _create_org(ana)
+    org = await create_org(ana)
     inv = (
         await ana.call(
             "POST", "/invitations", org=org["id"], json={"email": vic.email, "role": "viewer"}
         )
     ).json()
-    token = _invite_token(api, vic.email)
+    token = invite_token(api, vic.email)
     assert (await ana.call("DELETE", f"/invitations/{inv['id']}", org=org["id"])).status_code == 204
     assert (await vic.call("POST", f"/invitations/{token}/accept")).status_code == 400
 
     await ana.call(
         "POST", "/invitations", org=org["id"], json={"email": vic.email, "role": "viewer"}
     )
-    token = _invite_token(api, vic.email)
+    token = invite_token(api, vic.email)
     await _sql(api, "update invitations set expires_at = now() - interval '1 minute'")
     assert (await vic.call("POST", f"/invitations/{token}/accept")).status_code == 400
 
@@ -370,9 +261,9 @@ async def test_nobody_can_grant_more_than_they_have(api: ApiHarness, users: User
     ana = await users.make("ana@example.com")
     adm = await users.make("adm@example.com")
     ed = await users.make("ed@example.com")
-    org = await _create_org(ana)
-    await _add_member(api, ana, org["id"], adm, "admin")
-    await _add_member(api, ana, org["id"], ed, "editor")
+    org = await create_org(ana)
+    await add_member(api, ana, org["id"], adm, "admin")
+    await add_member(api, ana, org["id"], ed, "editor")
     members = {m["email"]: m for m in (await ana.call("GET", "/members", org=org["id"])).json()}
 
     # un admin no puede crear owners (le falta billing:manage)
@@ -414,14 +305,14 @@ async def test_nobody_can_grant_more_than_they_have(api: ApiHarness, users: User
 
 async def test_last_owner_is_protected(api: ApiHarness, users: Users) -> None:
     ana, bea = await users.make("ana@example.com"), await users.make("bea@example.com")
-    org = await _create_org(ana)
+    org = await create_org(ana)
     me = (await ana.call("GET", "/members", org=org["id"])).json()[0]
     demote = await ana.call("PATCH", f"/members/{me['id']}", org=org["id"], json={"role": "admin"})
     assert demote.status_code == 409 and demote.json()["code"] == "last_owner"
     leave = await ana.call("DELETE", f"/members/{me['id']}", org=org["id"])
     assert leave.status_code == 409
 
-    await _add_member(api, ana, org["id"], bea, "owner")
+    await add_member(api, ana, org["id"], bea, "owner")
     assert (
         await ana.call("PATCH", f"/members/{me['id']}", org=org["id"], json={"role": "admin"})
     ).status_code == 200
@@ -438,8 +329,8 @@ async def test_last_owner_is_protected(api: ApiHarness, users: Users) -> None:
 
 async def test_member_can_leave_and_loses_access(api: ApiHarness, users: Users) -> None:
     ana, vic = await users.make("ana@example.com"), await users.make("vic@example.com")
-    org = await _create_org(ana)
-    await _add_member(api, ana, org["id"], vic, "editor")
+    org = await create_org(ana)
+    await add_member(api, ana, org["id"], vic, "editor")
     mine = next(
         m
         for m in (await vic.call("GET", "/members", org=org["id"])).json()
@@ -455,8 +346,8 @@ async def test_member_can_leave_and_loses_access(api: ApiHarness, users: Users) 
 
 async def test_api_token_lifecycle_and_scope_limits(api: ApiHarness, users: Users) -> None:
     ana, vic = await users.make("ana@example.com"), await users.make("vic@example.com")
-    org = await _create_org(ana)
-    await _add_member(api, ana, org["id"], vic, "viewer")
+    org = await create_org(ana)
+    await add_member(api, ana, org["id"], vic, "viewer")
 
     created = await ana.call(
         "POST",
@@ -523,8 +414,8 @@ async def test_api_token_lifecycle_and_scope_limits(api: ApiHarness, users: User
 
 async def test_api_token_never_exceeds_current_role(api: ApiHarness, users: Users) -> None:
     ana, adm = await users.make("ana@example.com"), await users.make("adm@example.com")
-    org = await _create_org(ana)
-    await _add_member(api, ana, org["id"], adm, "admin")
+    org = await create_org(ana)
+    await add_member(api, ana, org["id"], adm, "admin")
     raw = (
         await adm.call(
             "POST",
@@ -562,7 +453,7 @@ async def test_api_token_never_exceeds_current_role(api: ApiHarness, users: User
 
 async def test_api_token_expiry_and_tenant_binding(api: ApiHarness, users: Users) -> None:
     ana, bruno = await users.make("ana@example.com"), await users.make("bruno@example.com")
-    org_a, org_b = await _create_org(ana, "Org A"), await _create_org(bruno, "Org B")
+    org_a, org_b = await create_org(ana, "Org A"), await create_org(bruno, "Org B")
     raw = (
         await ana.call(
             "POST", "/me/api-tokens", org=org_a["id"], json={"name": "t", "scopes": ["media:read"]}
@@ -585,7 +476,7 @@ async def test_api_token_expiry_and_tenant_binding(api: ApiHarness, users: Users
 
 async def test_rls_blocks_cross_org_reads_and_writes(api: ApiHarness, users: Users) -> None:
     ana, bruno = await users.make("ana@example.com"), await users.make("bruno@example.com")
-    org_a, org_b = await _create_org(ana, "Org A"), await _create_org(bruno, "Org B")
+    org_a, org_b = await create_org(ana, "Org A"), await create_org(bruno, "Org B")
     await ana.call(
         "POST", "/invitations", org=org_a["id"], json={"email": "x@example.com", "role": "viewer"}
     )

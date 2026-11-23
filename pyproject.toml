@@ -28,10 +28,11 @@ ignore = ["E501"]  # el formateador acota el código; las cadenas largas son ace
 [tool.ruff.lint.per-file-ignores]
 "scripts/gen-progress.py" = ["E501", "E701", "E702", "E741"]
 "services/api/alembic/**" = ["E501", "S608", "S105"]
-"**/tests/**" = ["S101", "S105", "S106", "E501"]
+"**/tests/**" = ["S101", "S105", "S106", "S608", "E501"]
 
 [tool.pytest.ini_options]
-testpaths = ["services/api/tests"]
+testpaths = ["services/api/tests", "tests/security"]
+pythonpath = ["services/api/tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 asyncio_default_test_loop_scope = "function"
@@ -40,7 +41,7 @@ markers = ["db: requiere PostgreSQL (pnpm infra:up)"]
 [tool.mypy]
 strict = true
 python_version = "3.12"
-files = ["services/api/src", "services/api/tests", "services/api/alembic"]
-exclude = ["services/api/alembic/versions/"]
-mypy_path = ["services/api/src", "services/api/tests"]
+files = ["services/api/src", "services/api/tests", "services/api/alembic", "tests/security"]
+exclude = ['services/api/alembic/versions/', '(^|/)conftest\.py$']
+mypy_path = ["services/api/src", "services/api/tests", "tests/security"]
 explicit_package_bases = true

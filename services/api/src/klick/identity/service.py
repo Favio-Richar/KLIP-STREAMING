@@ -95,7 +95,9 @@ class IdentityService:
         self, *, email: str, password: str, display_name: str, ip: str | None
     ) -> None:
         """Respuesta idéntica exista o no el correo (sin enumeración de cuentas)."""
-        await self._limiter.enforce("register_ip", ip or "unknown", limit=10, window_s=3600)
+        await self._limiter.enforce(
+            "register_ip", ip or "unknown", limit=self._s.rate_limit_register_ip, window_s=3600
+        )
         await self._limiter.enforce("register_email", email, limit=3, window_s=3600)
         if email.split("@")[0] in password.lower() or password.lower() == email:
             raise ApiError(
@@ -189,7 +191,9 @@ class IdentityService:
     async def login(
         self, *, email: str, password: str, ip: str | None, user_agent: str | None
     ) -> IssuedSession | MfaChallenge:
-        await self._limiter.enforce("login_ip", ip or "unknown", limit=30, window_s=300)
+        await self._limiter.enforce(
+            "login_ip", ip or "unknown", limit=self._s.rate_limit_login_ip, window_s=300
+        )
         locked = await self._limiter.lock_remaining("login", email)
         if locked:
             raise rate_limited(locked)

@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     refresh_token_ttl_days: int = 30
     verify_email_ttl_h: int = 48
     reset_password_ttl_h: int = 1
+    rate_limit_register_ip: int = 10  # por hora
+    rate_limit_login_ip: int = 30  # por 5 minutos
 
     email_backend: Literal["console", "smtp"] = "console"
     email_from: str = "Klick <no-reply@klick.local>"

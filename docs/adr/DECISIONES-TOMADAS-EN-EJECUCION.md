@@ -29,3 +29,7 @@ Una línea por decisión que no estaba en la documentación. Formato: `AAAA-MM-D
 2026-11-22 · F0-09 · Se corrigió el downgrade() de la migración 0004 (soltar la política org_select antes de borrar tablas) antes de commitearla; el esquema aplicado no cambió · el downgrade fallaba por dependencia entre políticas
 2026-11-22 · F0-09 · La tabla `devices` (docs/04 §3.2) se difiere a F0-14 (escritorio) · no la usa ninguna tarea anterior
 2026-11-22 · F0-09 · Los cambios de rol, altas/bajas de miembros y tokens se registran con structlog; pasan a `audit_events` en F0-11 cuando exista la tabla · la tabla de auditoría aún no existe
+2026-11-22 · F0-10 · Las pruebas de aislamiento viven en tests/security (como pide docs/04) y comparten fixtures con services/api/tests mediante `pythonpath` · evita duplicar la preparación de PostgreSQL y Redis
+2026-11-22 · F0-10 · Cada tabla con org_id debe registrar una fábrica en tests/security/sec_factories.py y cada ruta una política en sec_policy.py; la prueba falla si falta · fuerza a probar el aislamiento de todo recurso o endpoint futuro
+2026-11-22 · F0-10 · El aplanado de rutas recorre `_IncludedRouter` (FastAPI 0.165 incluye routers de forma perezosa) · FastAPI.routes ya no devuelve APIRoute directamente
+2026-11-22 · F0-10 · Los límites de tasa por IP de registro y login pasan a ajustes (RATE_LIMIT_REGISTER_IP, RATE_LIMIT_LOGIN_IP) con los mismos valores por defecto · las pruebas crean decenas de usuarios desde una sola IP
