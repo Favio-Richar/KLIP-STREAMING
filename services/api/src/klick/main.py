@@ -1,10 +1,15 @@
 """Punto de entrada de la API de Klick."""
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from klick.core.config import Settings, get_settings
+from klick.core.db import dispose_database, get_database
 from klick.core.errors import register_error_handlers
+from klick.core.health import register_readiness_check
 from klick.core.health import router as health_router
 from klick.core.logging import configure_logging
 from klick.core.middleware import REQUEST_ID_HEADER, RequestIdMiddleware
@@ -16,7 +21,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
     configure_logging(settings.log_level, settings.log_json)
 
+    @asynccontextmanager
+    async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+        if settings.database_url:
+            register_readiness_check("db", get_database().ping)
+        yield
+        await dispose_database()
+
     app = FastAPI(
+        lifespan=lifespan,
         title="Klick API",
         version="0.1.0",
         openapi_url=f"{API_PREFIX}/openapi.json",

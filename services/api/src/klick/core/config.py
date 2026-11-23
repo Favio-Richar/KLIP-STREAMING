@@ -18,6 +18,7 @@ class Settings(BaseSettings):
 
     database_url: str = ""
     database_url_system: str = ""
+    database_url_owner: str = ""
     redis_url: str = "redis://localhost:6381/0"
 
     app_secret_key: SecretStr = SecretStr("change-me-dev-only")

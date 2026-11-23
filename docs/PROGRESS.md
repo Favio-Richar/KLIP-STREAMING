@@ -11,7 +11,7 @@ Formato: `- [ ] ID título` → `- [x] ID título — AAAA-MM-DD — resultado`
 - [x] F0-03 Skills de diseño — 2026-11-22 — skills verificadas (huashu-design ausente, no bloquea); MASTER.md generado y reconciliado con docs/08; DESIGN.md creado
 - [x] F0-04 Scripts raíz — 2026-11-22 — comandos canónicos en package.json (task.mjs omite pasos aún inexistentes); pnpm check en verde
 - [x] F0-05 Esqueleto de API — 2026-11-22 — FastAPI, settings, structlog, request_id, problem+json, /healthz y /readyz, OpenAPI, CORS; 10 pruebas
-- [ ] F0-06 Capa de datos
+- [x] F0-06 Capa de datos — 2026-11-22 — motor async, tenant_session con app.org_id, roles app/system, Alembic, migración 0001 reversible; 18 pruebas (RLS real)
 - [ ] F0-07 Identidad
 - [ ] F0-08 MFA y acceso con Google
 - [ ] F0-09 Organizaciones y RBAC
