@@ -5,11 +5,14 @@ requires-python = ">=3.12,<3.13"
 dependencies = []
 
 [dependency-groups]
-dev = ["ruff>=0.8", "pre-commit>=4"]
+dev = ["ruff>=0.8", "pre-commit>=4", "pytest>=8", "pytest-asyncio>=0.24", "mypy>=1.13", "klick"]
 
 [tool.uv]
 package = false
 
+
+[tool.uv.sources]
+klick = { workspace = true }
 
 [tool.uv.workspace]
 members = ["services/api"]
@@ -23,3 +26,16 @@ select = ["E", "F", "I", "B", "UP", "S", "ASYNC"]
 
 [tool.ruff.lint.per-file-ignores]
 "scripts/gen-progress.py" = ["E501", "E701", "E702", "E741"]
+"**/tests/**" = ["S101", "S105", "S106"]
+
+[tool.pytest.ini_options]
+testpaths = ["services/api/tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+files = ["services/api/src", "services/api/tests"]
+mypy_path = ["services/api/src"]
+explicit_package_bases = true

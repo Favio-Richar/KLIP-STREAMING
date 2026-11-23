@@ -7,6 +7,23 @@
     "node": ">=22"
   },
   "scripts": {
+    "infra:up": "docker compose --profile core up -d --wait",
+    "infra:down": "docker compose --profile core down",
+    "db:migrate": "node scripts/task.mjs services/api/alembic.ini -- uv run --package klick alembic -c services/api/alembic.ini upgrade head",
+    "db:seed": "node scripts/task.mjs services/api/src/klick/core/seed.py -- uv run --package klick python -m klick.core.seed",
+    "api:dev": "node scripts/task.mjs services/api/src/klick/main.py -- uv run --package klick uvicorn klick.main:app --reload --port 8000",
+    "worker:dev": "node scripts/task.mjs infra/compose/workers.yml -- docker compose -f docker-compose.yml -f infra/compose/workers.yml --profile core up worker-default worker-media worker-ai-cpu worker-publish scheduler",
+    "web:dev": "node scripts/task.mjs apps/web/package.json -- pnpm --filter web dev",
+    "desktop:dev": "node scripts/task.mjs apps/desktop/package.json -- pnpm --filter desktop dev",
+    "test": "pnpm test:py && pnpm test:js",
+    "test:py": "uv run pytest",
+    "test:js": "turbo run test",
+    "test:e2e": "node scripts/task.mjs tests/e2e/package.json -- pnpm --dir tests/e2e test",
+    "lint": "pnpm lint:py && pnpm lint:js && pnpm lint:design",
+    "lint:py": "uv run ruff check . && uv run ruff format --check . && uv run mypy",
+    "lint:js": "turbo run lint typecheck",
+    "lint:design": "node scripts/task.mjs scripts/check-design-rules.mjs -- node scripts/check-design-rules.mjs",
+    "check": "pnpm lint && pnpm test",
     "format": "prettier --write ."
   },
   "devDependencies": {
