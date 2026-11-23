@@ -2,9 +2,17 @@
 
 import uuid
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, StringConstraints, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    StringConstraints,
+    field_validator,
+    model_validator,
+)
 
 PASSWORD_MIN = 10
 PASSWORD_MAX = 128
@@ -85,5 +93,44 @@ class SessionOut(BaseModel):
 
 
 class LoginResponse(BaseModel):
+    mfa_required: Literal[False] = False
     user: UserOut
     csrf_token: str
+
+
+class MfaRequiredResponse(BaseModel):
+    mfa_required: Literal[True] = True
+    mfa_token: str
+
+
+Code = Annotated[str, StringConstraints(strip_whitespace=True, min_length=6, max_length=32)]
+
+
+class MfaVerifyRequest(StrictModel):
+    mfa_token: Token | None = None  # también puede venir en la cookie (flujo Google)
+    code: Code | None = None
+    recovery_code: Code | None = None
+
+    @model_validator(mode="after")
+    def _one_factor(self) -> "MfaVerifyRequest":
+        if (self.code is None) == (self.recovery_code is None):
+            raise ValueError("envía `code` o `recovery_code`, no ambos")
+        return self
+
+
+class MfaEnrollResponse(BaseModel):
+    secret: str
+    otpauth_uri: str
+
+
+class MfaConfirmRequest(StrictModel):
+    code: Code
+
+
+class MfaConfirmResponse(BaseModel):
+    recovery_codes: list[str]
+
+
+class MfaDisableRequest(StrictModel):
+    password: Annotated[str, Field(max_length=PASSWORD_MAX)] | None = None
+    code: Code

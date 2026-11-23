@@ -2,12 +2,14 @@
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Literal
 
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from redis.asyncio import Redis
 
 from klick.core.config import Settings, get_settings
+from klick.core.crypto import Crypto
 from klick.core.db import Database
 from klick.core.email import EmailSender, build_email_sender
 from klick.core.errors import register_error_handlers
@@ -16,6 +18,8 @@ from klick.core.health import router as health_router
 from klick.core.logging import configure_logging
 from klick.core.middleware import REQUEST_ID_HEADER, RequestIdMiddleware
 from klick.core.ratelimit import RateLimiter
+from klick.identity.mfa import MfaService
+from klick.identity.oidc import OidcProvider, OidcService, build_oidc_provider
 from klick.identity.router import auth_router, me_router
 from klick.identity.service import IdentityService
 
@@ -23,9 +27,12 @@ API_PREFIX = "/api/v1"
 
 
 def create_app(
-    settings: Settings | None = None, email_sender: EmailSender | None = None
+    settings: Settings | None = None,
+    email_sender: EmailSender | None = None,
+    oidc_provider: OidcProvider | None | Literal["auto"] = "auto",
 ) -> FastAPI:
     settings = settings or get_settings()
+    provider = build_oidc_provider(settings) if oidc_provider == "auto" else oidc_provider
     configure_logging(settings.log_level, settings.log_json)
 
     @asynccontextmanager
@@ -34,8 +41,14 @@ def create_app(
         redis: Redis = Redis.from_url(settings.redis_url, decode_responses=True)
         app.state.db = db
         app.state.redis = redis
+        limiter = RateLimiter(redis)
+        mfa = MfaService(
+            db, redis, limiter, Crypto(settings.encryption_master_key.get_secret_value()), settings
+        )
+        app.state.mfa_service = mfa
+        app.state.oidc_service = OidcService(db, redis, provider, settings)
         app.state.identity_service = IdentityService(
-            db, RateLimiter(redis), email_sender or build_email_sender(settings), settings
+            db, limiter, email_sender or build_email_sender(settings), settings, mfa
         )
         register_readiness_check(app, "db", db.ping)
         register_readiness_check(app, "redis", redis.ping)  # type: ignore[arg-type]

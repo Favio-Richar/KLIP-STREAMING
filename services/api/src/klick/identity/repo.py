@@ -3,10 +3,17 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from klick.identity.models import AuthToken, Session, User
+from klick.identity.models import (
+    AuthToken,
+    MfaFactor,
+    MfaRecoveryCode,
+    Session,
+    User,
+    UserIdentity,
+)
 
 
 async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
@@ -96,3 +103,89 @@ async def invalidate_auth_tokens(
         )
         .values(used_at=now)
     )
+
+
+# ----------------------------------------------------------------------------- MFA
+
+
+async def get_totp_factor(
+    db: AsyncSession, user_id: uuid.UUID, *, confirmed: bool | None = None, for_update: bool = False
+) -> MfaFactor | None:
+    stmt = select(MfaFactor).where(MfaFactor.user_id == user_id, MfaFactor.type == "totp")
+    if confirmed is True:
+        stmt = stmt.where(MfaFactor.confirmed_at.is_not(None))
+    elif confirmed is False:
+        stmt = stmt.where(MfaFactor.confirmed_at.is_(None))
+    if for_update:
+        stmt = stmt.with_for_update()
+    return (await db.execute(stmt.limit(1))).scalar_one_or_none()
+
+
+async def add_factor(db: AsyncSession, factor: MfaFactor) -> MfaFactor:
+    db.add(factor)
+    await db.flush()
+    return factor
+
+
+async def delete_unconfirmed_factors(db: AsyncSession, user_id: uuid.UUID) -> None:
+    await db.execute(
+        delete(MfaFactor).where(MfaFactor.user_id == user_id, MfaFactor.confirmed_at.is_(None))
+    )
+
+
+async def delete_mfa(db: AsyncSession, user_id: uuid.UUID) -> None:
+    await db.execute(delete(MfaFactor).where(MfaFactor.user_id == user_id))
+    await db.execute(delete(MfaRecoveryCode).where(MfaRecoveryCode.user_id == user_id))
+
+
+async def replace_recovery_codes(
+    db: AsyncSession, user_id: uuid.UUID, rows: list[MfaRecoveryCode]
+) -> None:
+    await db.execute(delete(MfaRecoveryCode).where(MfaRecoveryCode.user_id == user_id))
+    db.add_all(rows)
+    await db.flush()
+
+
+async def consume_recovery_code(
+    db: AsyncSession, user_id: uuid.UUID, code_hash: str, now: datetime
+) -> bool:
+    """Marca el código como usado de forma atómica; False si no existe o ya se usó."""
+    result = await db.execute(
+        update(MfaRecoveryCode)
+        .where(
+            MfaRecoveryCode.user_id == user_id,
+            MfaRecoveryCode.code_hash == code_hash,
+            MfaRecoveryCode.used_at.is_(None),
+        )
+        .values(used_at=now)
+        .returning(MfaRecoveryCode.id)
+    )
+    return result.first() is not None
+
+
+async def count_unused_recovery_codes(db: AsyncSession, user_id: uuid.UUID) -> int:
+    rows = await db.execute(
+        select(MfaRecoveryCode.id).where(
+            MfaRecoveryCode.user_id == user_id, MfaRecoveryCode.used_at.is_(None)
+        )
+    )
+    return len(rows.all())
+
+
+# ------------------------------------------------------------------------ identidades
+
+
+async def get_identity(db: AsyncSession, provider: str, subject: str) -> UserIdentity | None:
+    return (
+        await db.execute(
+            select(UserIdentity).where(
+                UserIdentity.provider == provider, UserIdentity.subject == subject
+            )
+        )
+    ).scalar_one_or_none()
+
+
+async def add_identity(db: AsyncSession, identity: UserIdentity) -> UserIdentity:
+    db.add(identity)
+    await db.flush()
+    return identity

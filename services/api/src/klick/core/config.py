@@ -3,7 +3,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -41,8 +41,25 @@ class Settings(BaseSettings):
     smtp_password: SecretStr = SecretStr("")
     smtp_starttls: bool = True
 
+    google_oauth_client_id: str = ""
+    google_oauth_client_secret: SecretStr = SecretStr("")
+
     cors_allow_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
     feature_fake_adapters: bool = True
+
+    @model_validator(mode="after")
+    def _no_default_secrets_in_production(self) -> "Settings":
+        if self.environment == "production":
+            defaults = {
+                "APP_SECRET_KEY": self.app_secret_key.get_secret_value().startswith("change-me"),
+                "ENCRYPTION_MASTER_KEY": self.encryption_master_key.get_secret_value().startswith(
+                    "change-me"
+                ),
+            }
+            bad = [name for name, is_default in defaults.items() if is_default]
+            if bad:
+                raise ValueError(f"Valores por defecto no permitidos en producción: {bad}")
+        return self
 
     @property
     def secure_cookies(self) -> bool:

@@ -3,7 +3,16 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, LargeBinary, Text, UniqueConstraint, text
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    LargeBinary,
+    Text,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.dialects.postgresql import CITEXT, INET, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -65,6 +74,7 @@ class MfaFactor(IdMixin, TimestampMixin, Base):
     type: Mapped[str] = mapped_column(Text, nullable=False)
     secret_encrypted: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_used_step: Mapped[int | None] = mapped_column(BigInteger)
 
 
 class MfaRecoveryCode(IdMixin, TimestampMixin, Base):

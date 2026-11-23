@@ -17,6 +17,7 @@ from klick.core.errors import ApiError
 from klick.core.ids import new_id
 from klick.core.ratelimit import RateLimiter, rate_limited
 from klick.identity import repo
+from klick.identity.mfa import MfaChallenge, MfaService
 from klick.identity.models import AuthToken, Session, User
 from klick.identity.security import (
     decode_access_token,
@@ -51,6 +52,7 @@ class IssuedSession:
 class AuthContext:
     user: User
     session_id: uuid.UUID
+    mfa_enabled: bool = False
 
 
 def _now() -> datetime:
@@ -79,11 +81,13 @@ class IdentityService:
         limiter: RateLimiter,
         email: EmailSender,
         settings: Settings,
+        mfa: MfaService,
     ) -> None:
         self._db = db
         self._limiter = limiter
         self._email = email
         self._s = settings
+        self._mfa = mfa
 
     # ------------------------------------------------------------------ registro y correo
 
@@ -184,12 +188,13 @@ class IdentityService:
 
     async def login(
         self, *, email: str, password: str, ip: str | None, user_agent: str | None
-    ) -> IssuedSession:
+    ) -> IssuedSession | MfaChallenge:
         await self._limiter.enforce("login_ip", ip or "unknown", limit=30, window_s=300)
         locked = await self._limiter.lock_remaining("login", email)
         if locked:
             raise rate_limited(locked)
 
+        issued: IssuedSession | None = None
         async with self._db.global_session() as s:
             user = await repo.get_user_by_email(s, email)
             stored_hash = user.password_hash if user and user.is_active else None
@@ -202,13 +207,55 @@ class IdentityService:
                 raise _invalid_credentials()
             if needs_rehash(user.password_hash or ""):
                 user.password_hash = await hash_password(password)
+            has_mfa = await repo.get_totp_factor(s, user.id, confirmed=True) is not None
+            if not has_mfa:
+                user.last_login_at = _now()
+                issued = await self._open_session(
+                    s, user, family_id=new_id(), rotated_from=None, ip=ip, user_agent=user_agent
+                )
+        await self._limiter.clear_failures("login", email)
+        if issued is None:
+            log.info("login_mfa_required", user_id=str(user.id))
+            return await self._mfa.create_challenge(user.id)
+        log.info("login_succeeded", user_id=str(user.id))
+        return issued
+
+    async def complete_mfa_login(
+        self,
+        *,
+        token: str,
+        code: str | None,
+        recovery_code: str | None,
+        ip: str | None,
+        user_agent: str | None,
+    ) -> IssuedSession:
+        user_id = await self._mfa.verify_challenge(
+            token=token, code=code, recovery_code=recovery_code
+        )
+        return await self.start_session(user_id, ip=ip, user_agent=user_agent)
+
+    async def start_session(
+        self, user_id: uuid.UUID, *, ip: str | None, user_agent: str | None
+    ) -> IssuedSession:
+        """Abre una sesión nueva (familia nueva) tras una autenticación ya comprobada."""
+        async with self._db.global_session() as s:
+            user = await repo.get_user(s, user_id)
+            if user is None or not user.is_active:
+                raise _invalid_credentials()
             user.last_login_at = _now()
             issued = await self._open_session(
                 s, user, family_id=new_id(), rotated_from=None, ip=ip, user_agent=user_agent
             )
-        await self._limiter.clear_failures("login", email)
-        log.info("login_succeeded", user_id=str(user.id))
+        log.info("session_started", user_id=str(user_id))
         return issued
+
+    async def login_with_user(
+        self, user: User, *, ip: str | None, user_agent: str | None
+    ) -> IssuedSession | MfaChallenge:
+        """Para proveedores externos (Google): respeta el MFA del usuario si lo tiene."""
+        if await self._mfa.is_enabled(user.id):
+            return await self._mfa.create_challenge(user.id)
+        return await self.start_session(user.id, ip=ip, user_agent=user_agent)
 
     async def _open_session(
         self,
@@ -337,7 +384,8 @@ class IdentityService:
             user = await repo.get_user(s, user_id)
             if user is None or not user.is_active:
                 raise unauthenticated()
-            return AuthContext(user=user, session_id=session_id)
+            mfa_enabled = await repo.get_totp_factor(s, user_id, confirmed=True) is not None
+            return AuthContext(user=user, session_id=session_id, mfa_enabled=mfa_enabled)
 
     # ------------------------------------------------------------------ recuperación
 

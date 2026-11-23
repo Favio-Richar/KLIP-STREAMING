@@ -11,6 +11,7 @@ from harness import ApiHarness
 from klick.core.config import Settings
 from klick.identity.deps import clear_session_cookies, set_session_cookies
 from klick.identity.service import IssuedSession
+from pydantic import SecretStr
 from sqlalchemy.engine import make_url
 
 pytestmark = pytest.mark.db
@@ -152,7 +153,11 @@ async def test_login_sets_hardened_cookies_and_me_works(api: ApiHarness) -> None
 
 
 def test_cookies_are_secure_in_production() -> None:
-    settings = Settings(environment="production")
+    settings = Settings(
+        environment="production",
+        app_secret_key=SecretStr("a-real-production-secret-0123456789abcdef"),
+        encryption_master_key=SecretStr("another-real-production-secret-0123456789"),
+    )
     issued = IssuedSession(
         user=None,  # type: ignore[arg-type]
         session_id=uuid.uuid4(),

@@ -17,3 +17,8 @@ Una línea por decisión que no estaba en la documentación. Formato: `AAAA-MM-D
 2026-11-22 · F0-07 · Bloqueo progresivo por correo: 5 fallos libres en 15 min y luego 1, 2, 4... min (máx. 60); además tasa por IP · docs/09 exige bloqueo progresivo
 2026-11-22 · F0-07 · Los clientes web deben serializar el refresco (un solo vuelo) porque una carrera de dos refrescos con el mismo token se trata como reutilización · sin ventana de gracia para no debilitar la detección
 2026-11-22 · F0-07 · Singletons (BD, Redis, correo, sondas de salud) viven en app.state y no en módulos globales · permite varias apps en pruebas
+2026-11-22 · F0-08 · Secreto TOTP cifrado con AES-256-GCM en sobre (clave de datos por registro envuelta con ENCRYPTION_MASTER_KEY vía HKDF) y ligado al usuario por AAD · ADR-014
+2026-11-22 · F0-08 · Migración 0003 añade mfa_factors.last_used_step para impedir reutilizar un código TOTP · protección anti-replay; la 0002 ya estaba aplicada y no se edita
+2026-11-22 · F0-08 · El desafío MFA del login vive en Redis (5 min, un solo uso, 5 intentos) y los códigos de recuperación se guardan como SHA-256 · estado efímero; los códigos tienen ~50 bits y se consumen de forma atómica
+2026-11-22 · F0-08 · Google OIDC: si el correo local existe sin verificar, se descarta su contraseña y sus sesiones antes de vincular; si está verificado, se vincula · previene el secuestro previo al registro
+2026-11-22 · F0-08 · Proveedor `fake` de Google solo si no hay credenciales, FEATURE_FAKE_ADAPTERS=true y no es producción; con producción se exige APP_SECRET_KEY y ENCRYPTION_MASTER_KEY no por defecto · el fake no puede quedar activo en producción por error
