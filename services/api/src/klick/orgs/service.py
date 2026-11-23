@@ -11,6 +11,7 @@ from typing import Any
 import structlog
 from sqlalchemy.exc import IntegrityError
 
+from klick.core.audit import record_audit
 from klick.core.config import Settings
 from klick.core.db import Database, set_context
 from klick.core.email import Email, EmailSender
@@ -58,6 +59,27 @@ def slugify(name: str) -> str:
     text = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
     slug = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")[:40].strip("-")
     return slug or "org"
+
+
+async def _audit(
+    s: Any,
+    principal: Principal,
+    action: str,
+    resource_type: str,
+    resource_id: uuid.UUID,
+    diff: dict[str, Any] | None = None,
+) -> None:
+    """Auditoría de una acción de organización, en la misma transacción del cambio."""
+    await record_audit(
+        s,
+        action=action,
+        actor_type="api_token" if principal.origin == "api_token" else "user",
+        actor_id=principal.user_id,
+        org_id=principal.org_id,
+        resource_type=resource_type,
+        resource_id=resource_id,
+        diff=diff,
+    )
 
 
 def _not_found() -> ApiError:
@@ -113,6 +135,16 @@ class OrgService:
                     org = await repo.get_org(s, org_id)
                     perms = await repo.role_permissions(s, owner.id)
                     assert org is not None  # noqa: S101 - recién insertada en esta transacción
+                    await record_audit(
+                        s,
+                        action="org.created",
+                        actor_type="user",
+                        actor_id=user.id,
+                        org_id=org_id,
+                        resource_type="organization",
+                        resource_id=org_id,
+                        diff={"name": org.name, "slug": org.slug},
+                    )
             except IntegrityError:
                 if slug is not None:  # el usuario pidió un slug concreto y ya existe
                     raise ApiError(
@@ -176,6 +208,14 @@ class OrgService:
                 org.name = name.strip()
             if settings:
                 org.settings = {**org.settings, **settings}
+            await _audit(
+                s,
+                principal,
+                "org.updated",
+                "organization",
+                principal.org_id,
+                {"name": name, "settings": sorted(settings or {})},
+            )
             return OrgView(org, principal.role_key, principal.permissions)
 
     # -------------------------------------------------------------------- miembros
@@ -218,8 +258,17 @@ class OrgService:
                     "Last owner",
                     "La organización debe conservar un propietario.",
                 )
+            old_role_key = current_role.key
             membership.role_id = new_role.id
             await s.flush()
+            await _audit(
+                s,
+                principal,
+                "member.role_changed",
+                "membership",
+                membership.id,
+                {"user_id": str(membership.user_id), "from": old_role_key, "to": new_role.key},
+            )
             user = await s.get(User, membership.user_id)
             assert user is not None  # noqa: S101 - FK garantiza su existencia
             log.info(
@@ -255,6 +304,14 @@ class OrgService:
                     "La organización debe conservar un propietario.",
                 )
             await s.delete(membership)
+            await _audit(
+                s,
+                principal,
+                "member.removed",
+                "membership",
+                membership.id,
+                {"user_id": str(membership.user_id), "role": role.key, "self": is_self},
+            )
             log.info(
                 "member_removed",
                 org_id=str(principal.org_id),
@@ -295,6 +352,14 @@ class OrgService:
             )
             s.add(invitation)
             await s.flush()
+            await _audit(
+                s,
+                principal,
+                "invitation.created",
+                "invitation",
+                invitation.id,
+                {"email": email, "role": role_key},
+            )
             org_name = org.name
         await self._email.send(
             Email(
@@ -323,6 +388,7 @@ class OrgService:
             if inv is None or inv.accepted_at is not None:
                 raise _not_found()
             inv.revoked_at = _now()
+            await _audit(s, principal, "invitation.revoked", "invitation", inv.id)
 
     async def accept_invitation(self, user: User, token: str) -> OrgView:
         if user.email_verified_at is None:
@@ -361,6 +427,15 @@ class OrgService:
                 )
             inv.accepted_at = now
             await s.flush()
+            await record_audit(
+                s,
+                action="invitation.accepted",
+                actor_type="user",
+                actor_id=user.id,
+                org_id=inv.org_id,
+                resource_type="invitation",
+                resource_id=inv.id,
+            )
             org = await repo.get_org(s, inv.org_id)
             role = await repo.get_role(s, inv.role_id)
             assert org is not None and role is not None  # noqa: S101
@@ -406,6 +481,14 @@ class OrgService:
         async with self._db.tenant_session(principal.org_id, principal.user_id) as s:
             s.add(token)
             await s.flush()
+            await _audit(
+                s,
+                principal,
+                "api_token.created",
+                "api_token",
+                token.id,
+                {"name": token.name, "scopes": token.scopes, "expires_at": str(token.expires_at)},
+            )
         log.info("api_token_created", org_id=str(principal.org_id), token_id=str(token.id))
         return CreatedToken(token=token, raw=raw)
 
@@ -421,6 +504,7 @@ class OrgService:
             if token.user_id != principal.user_id:
                 principal.require("members:manage")
             token.revoked_at = _now()
+            await _audit(s, principal, "api_token.revoked", "api_token", token.id)
 
     async def authenticate_token(self, raw: str) -> Principal | None:
         """Resuelve un token de API a un Principal. Sus permisos nunca exceden los del usuario."""

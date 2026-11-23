@@ -6,6 +6,7 @@ import httpx
 from fastapi import FastAPI
 from klick.core.config import Settings
 from klick.core.email import MemoryEmailSender
+from klick.core.jobs import NullDispatcher
 from redis.asyncio import Redis
 
 
@@ -17,3 +18,4 @@ class ApiHarness:
     db_urls: dict[str, str]
     redis: Redis
     settings: Settings
+    dispatcher: NullDispatcher

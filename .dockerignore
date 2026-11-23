@@ -1,0 +1,15 @@
+.git
+.venv
+node_modules
+**/__pycache__
+**/.next
+**/.turbo
+.env
+.env.*
+!.env.example
+docs
+tests
+apps
+packages
+design-system
+*.md

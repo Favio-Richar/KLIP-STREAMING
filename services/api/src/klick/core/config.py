@@ -35,6 +35,14 @@ class Settings(BaseSettings):
     rate_limit_register_ip: int = 10  # por hora
     rate_limit_login_ip: int = 30  # por 5 minutos
 
+    job_heartbeat_interval_s: float = 10
+    job_heartbeat_timeout_s: float = 60  # sin latido durante este tiempo = worker perdido
+    job_backoff_base_s: float = 5  # reintento n espera base * 2**(n-1), máx. 15 min
+    job_redispatch_after_s: float = 600  # re-envía jobs en cola cuyo mensaje pudo perderse
+    outbox_batch_size: int = 100
+    idempotency_ttl_h: int = 24
+    audit_retention_days: int = 730
+
     email_backend: Literal["console", "smtp"] = "console"
     email_from: str = "Klick <no-reply@klick.local>"
     smtp_host: str = ""

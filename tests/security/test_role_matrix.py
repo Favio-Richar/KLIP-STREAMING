@@ -36,6 +36,7 @@ def _request(method: str, template: str, t: Tenant) -> tuple[str, Any]:
             "invitation_id": t.invitation_id,
             "token_id": str(uuid.uuid4()),  # los tokens ajenos se comprueban en test_idor
             "org_id": t.org_id,
+            "job_id": t.job_id,
         }[m.group(1)],
         template,
     )
@@ -46,13 +47,19 @@ def _request(method: str, template: str, t: Tenant) -> tuple[str, Any]:
         body = {"email": _unique_email(), "role": "viewer"}
     elif (method, template) == ("POST", f"{BASE}/me/api-tokens"):
         body = {"name": "matrix", "scopes": ["media:read"]}
+    elif (method, template) == ("POST", f"{BASE}/jobs"):
+        body = {"kind": "system.ping", "payload": {"steps": 1}}
     elif (method, template) == ("PATCH", f"{BASE}/orgs/{{org_id}}"):
         body = {"name": "Matrix Org"}
     return path.removeprefix(BASE), body
 
 
 def _org_routes() -> list[tuple[tuple[str, str], Policy]]:
-    return [(k, p) for k, p in POLICY.items() if p.kind in ("org_header", "org_path")]
+    return [
+        (k, p)
+        for k, p in POLICY.items()
+        if p.kind in ("org_header", "org_path") and not p.streaming
+    ]
 
 
 @pytest.fixture

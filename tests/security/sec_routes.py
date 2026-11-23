@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from fastapi.dependencies.models import Dependant
 from fastapi.routing import APIRoute
 from klick.identity.deps import current_auth
-from klick.orgs.deps import current_principal, path_principal
+from klick.orgs.deps import current_principal, path_principal, stream_principal
 
 Kind = Literal["public", "user", "org_header", "org_path"]
 
@@ -41,7 +41,7 @@ def classify_routes(app: FastAPI) -> dict[tuple[str, str], Kind]:
     for path, route in _walk(app.routes):
         calls = set(_calls(route.dependant))
         kind: Kind
-        if current_principal in calls:
+        if current_principal in calls or stream_principal in calls:
             kind = "org_header"
         elif path_principal in calls:
             kind = "org_path"

@@ -8,6 +8,8 @@ from starlette.datastructures import MutableHeaders
 from starlette.requests import Request
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from klick.core.audit import RequestInfo, request_info
+
 REQUEST_ID_HEADER = "X-Request-ID"
 _MAX_LEN = 128
 
@@ -33,6 +35,14 @@ class RequestIdMiddleware:
         scope.setdefault("state", {})["request_id"] = request_id
         structlog.contextvars.clear_contextvars()
         structlog.contextvars.bind_contextvars(request_id=request_id)
+        client = scope.get("client")
+        request_info.set(
+            RequestInfo(
+                request_id=request_id,
+                ip=client[0] if client else None,
+                user_agent=request.headers.get("user-agent"),
+            )
+        )
         log = structlog.get_logger("klick.access")
         started = time.perf_counter()
         status_holder = {"status": 500}

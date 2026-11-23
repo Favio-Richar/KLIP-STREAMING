@@ -3,7 +3,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import Depends, Request
+from fastapi import Depends, Query, Request
 
 from klick.core.errors import ApiError
 from klick.identity.deps import current_auth, get_identity_service
@@ -86,6 +86,17 @@ async def path_principal(
     return await resolve_principal(request, orgs, identity, org_id=org_id)
 
 
+async def stream_principal(
+    request: Request,
+    orgs: Annotated[OrgService, Depends(get_org_service)],
+    identity: Annotated[IdentityService, Depends(get_identity_service)],
+    org_id: Annotated[uuid.UUID | None, Query(description="Alternativa a X-Org-ID")] = None,
+) -> Principal:
+    """Para flujos SSE: EventSource no puede enviar cabeceras, así que admite ``?org_id=``."""
+    return await resolve_principal(request, orgs, identity, org_id=org_id)
+
+
 CurrentPrincipal = Annotated[Principal, Depends(current_principal)]
 PathPrincipal = Annotated[Principal, Depends(path_principal)]
+StreamPrincipal = Annotated[Principal, Depends(stream_principal)]
 Orgs = Annotated[OrgService, Depends(get_org_service)]

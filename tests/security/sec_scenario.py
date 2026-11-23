@@ -33,6 +33,7 @@ class Tenant:
     invitation_id: str = ""
     token_id: str = ""
     token_raw: str = ""
+    job_id: str = ""
     extra: dict[str, Any] = field(default_factory=dict)
 
     def actor(self, role: str) -> Actor:
@@ -68,6 +69,13 @@ async def build_tenant(api: ApiHarness, users: Users, tag: str) -> Tenant:
         json={"name": f"tok-{tag}", "scopes": ["media:read"]},
     )
     tenant.token_id, tenant.token_raw = tok.json()["id"], tok.json()["token"]
+    job = await owner.call(
+        "POST",
+        "/jobs",
+        org=org["id"],
+        json={"kind": "system.ping", "payload": {"steps": 1}},
+    )
+    tenant.job_id = job.json()["job_id"]
     return tenant
 
 

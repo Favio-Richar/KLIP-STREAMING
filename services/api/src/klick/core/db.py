@@ -7,6 +7,7 @@ Regla de tenant (docs/04 §2): cada transacción fija ``app.org_id`` antes de cu
 import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Any
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
@@ -15,6 +16,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.pool import NullPool
 
 from klick.core.config import Settings
 
@@ -42,17 +44,19 @@ async def set_context(session: AsyncSession, **values: str | uuid.UUID | None) -
 class Database:
     """Agrupa el motor de la aplicación (sin BYPASSRLS) y el del sistema (BYPASSRLS)."""
 
-    def __init__(self, settings: Settings) -> None:
+    def __init__(self, settings: Settings, *, null_pool: bool = False) -> None:
+        """``null_pool=True`` para procesos que crean un bucle de eventos por tarea (workers)."""
         if not settings.database_url:
             raise RuntimeError("DATABASE_URL no está configurada")
-        self._app_engine = create_async_engine(settings.database_url, pool_pre_ping=True)
+        pool_args: dict[str, Any] = (
+            {"poolclass": NullPool} if null_pool else {"pool_pre_ping": True}
+        )
+        self._app_engine = create_async_engine(settings.database_url, **pool_args)
         self._app_factory = async_sessionmaker(self._app_engine, expire_on_commit=False)
         self._system_engine: AsyncEngine | None = None
         self._system_factory: async_sessionmaker[AsyncSession] | None = None
         if settings.database_url_system:
-            self._system_engine = create_async_engine(
-                settings.database_url_system, pool_pre_ping=True
-            )
+            self._system_engine = create_async_engine(settings.database_url_system, **pool_args)
             self._system_factory = async_sessionmaker(self._system_engine, expire_on_commit=False)
 
     @asynccontextmanager

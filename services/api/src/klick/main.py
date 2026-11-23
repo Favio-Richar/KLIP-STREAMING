@@ -8,6 +8,7 @@ from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from redis.asyncio import Redis
 
+import klick.jobs_handlers  # noqa: F401 - registra los kinds de job
 from klick.core.config import Settings, get_settings
 from klick.core.crypto import Crypto
 from klick.core.db import Database
@@ -15,8 +16,11 @@ from klick.core.email import EmailSender, build_email_sender
 from klick.core.errors import register_error_handlers
 from klick.core.health import register_readiness_check
 from klick.core.health import router as health_router
+from klick.core.idempotency import IdempotencyStore
+from klick.core.jobs import Dispatcher, JobService
 from klick.core.logging import configure_logging
 from klick.core.middleware import REQUEST_ID_HEADER, RequestIdMiddleware
+from klick.core.queue import DramatiqDispatcher, setup_broker
 from klick.core.ratelimit import RateLimiter
 from klick.identity.mfa import MfaService
 from klick.identity.oidc import OidcProvider, OidcService, build_oidc_provider
@@ -29,6 +33,7 @@ from klick.orgs.router import (
     tokens_router,
 )
 from klick.orgs.service import OrgService
+from klick.system.router import events_router, jobs_router
 
 API_PREFIX = "/api/v1"
 
@@ -37,6 +42,7 @@ def create_app(
     settings: Settings | None = None,
     email_sender: EmailSender | None = None,
     oidc_provider: OidcProvider | None | Literal["auto"] = "auto",
+    dispatcher: Dispatcher | None = None,
 ) -> FastAPI:
     settings = settings or get_settings()
     provider = build_oidc_provider(settings) if oidc_provider == "auto" else oidc_provider
@@ -60,6 +66,10 @@ def create_app(
         app.state.org_service = OrgService(
             db, email_sender or build_email_sender(settings), settings
         )
+        app.state.job_service = JobService(
+            db, dispatcher or DramatiqDispatcher(setup_broker(settings.redis_url))
+        )
+        app.state.idempotency = IdempotencyStore(db, settings)
         register_readiness_check(app, "db", db.ping)
         register_readiness_check(app, "redis", redis.ping)  # type: ignore[arg-type]
         yield
@@ -97,6 +107,8 @@ def create_app(
     api_router.include_router(orgs_router)
     api_router.include_router(members_router)
     api_router.include_router(invitations_router)
+    api_router.include_router(jobs_router)
+    api_router.include_router(events_router)
     app.include_router(api_router)
     return app
 

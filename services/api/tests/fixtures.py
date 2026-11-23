@@ -16,6 +16,7 @@ from harness import ApiHarness
 from klick.core.config import Settings
 from klick.core.db import Database
 from klick.core.email import MemoryEmailSender
+from klick.core.jobs import NullDispatcher
 from klick.core.seed import seed_permissions_and_roles
 from klick.main import create_app
 from pydantic import SecretStr
@@ -138,11 +139,12 @@ async def api(temp_db: dict[str, str], redis_client: Redis) -> AsyncIterator[Api
         rate_limit_login_ip=10_000,
     )
     emails = MemoryEmailSender()
-    app = create_app(settings, email_sender=emails)
+    dispatcher = NullDispatcher()
+    app = create_app(settings, email_sender=emails, dispatcher=dispatcher)
     async with app.router.lifespan_context(app):
         transport = httpx.ASGITransport(app=app, raise_app_exceptions=False)
         async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
-            yield ApiHarness(app, client, emails, temp_db, redis_client, settings)
+            yield ApiHarness(app, client, emails, temp_db, redis_client, settings, dispatcher)
 
 
 @pytest.fixture

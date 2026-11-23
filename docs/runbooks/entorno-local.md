@@ -34,6 +34,12 @@ pnpm web:dev                  # http://localhost:3000
 ```
 GPU: `pnpm infra:up -- --profile gpu` levanta `worker-ai`. Verificar con `docker run --rm --gpus all nvidia/cuda:12.4.1-base-ubuntu22.04 nvidia-smi`; si no responde, revisar Docker Desktop → Settings → Resources → WSL integration y el controlador.
 
+
+## Workers y scheduler (F0-11)
+`pnpm worker:dev` construye la imagen `klick-api:dev` (`infra/docker/api.Dockerfile`) y levanta `worker-default`, `worker-media`, `worker-ai`, `worker-publish` y `scheduler` con `infra/compose/workers.yml`. El `scheduler` es único: publica el outbox cada segundo, reconcilia jobs cada 15 s, mantiene las particiones (3 meses por delante) y limpia claves de idempotencia vencidas. Los workers alcanzan PostgreSQL y Redis por el nombre del servicio, no por `localhost`.
+
+Prueba de humo: con la API en marcha (`pnpm api:dev`), crea un job `system.ping` (`POST /api/v1/jobs`, rol con `org:manage`) y sigue su progreso en `GET /api/v1/events/stream`.
+
 ## Puertos
 | Servicio | Puerto |
 |---|---|

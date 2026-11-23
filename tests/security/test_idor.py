@@ -21,6 +21,7 @@ BODIES: dict[tuple[str, str], Any] = {
     ("PATCH", f"{BASE}/members/{{member_id}}"): {"role": "admin"},
     ("POST", f"{BASE}/invitations"): {"email": "pwn@example.com", "role": "viewer"},
     ("POST", f"{BASE}/me/api-tokens"): {"name": "pwn", "scopes": ["media:read"]},
+    ("POST", f"{BASE}/jobs"): {"kind": "system.ping", "payload": {"steps": 1}},
     ("PATCH", f"{BASE}/orgs/{{org_id}}"): {"name": "pwned"},
 }
 
@@ -30,6 +31,7 @@ def _path(template: str, a: Tenant, ids: dict[str, str]) -> str:
         "member_id": a.member_ids["viewer"],
         "invitation_id": a.invitation_id,
         "token_id": a.token_id,
+        "job_id": a.job_id,
         "org_id": a.org_id,
         **ids,
     }
@@ -107,6 +109,8 @@ async def test_foreign_organization_is_never_reachable(
         if policy.kind not in ("org_header", "org_path"):
             continue
         body = BODIES.get((method, template), {} if method in {"POST", "PATCH", "PUT"} else None)
+        if policy.streaming:
+            body = None
         path = _path(template, a, ids)
         short = path.removeprefix(BASE)
 

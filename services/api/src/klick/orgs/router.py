@@ -1,9 +1,12 @@
 """Endpoints de organizaciones, miembros, invitaciones y tokens de API (docs/05 §2)."""
 
 import uuid
+from typing import Any
 
-from fastapi import APIRouter, Response, status
+from fastapi import APIRouter, Request, Response, status
+from fastapi.responses import JSONResponse
 
+from klick.core.idempotency import Idem
 from klick.identity.deps import CurrentAuth
 from klick.orgs.deps import CurrentPrincipal, Orgs, PathPrincipal
 from klick.orgs.schemas import (
@@ -110,15 +113,21 @@ async def list_invitations(principal: CurrentPrincipal, orgs: Orgs) -> list[Invi
 
 @invitations_router.post("", status_code=status.HTTP_201_CREATED, response_model=InvitationOut)
 async def create_invitation(
-    body: InvitationCreate, principal: CurrentPrincipal, orgs: Orgs
-) -> InvitationOut:
-    inv, role = await orgs.invite(principal, email=body.email, role_key=body.role)
-    return InvitationOut(
-        id=inv.id,
-        email=inv.email,
-        role=role.key,
-        expires_at=inv.expires_at,
-        created_at=inv.created_at,
+    body: InvitationCreate, request: Request, principal: CurrentPrincipal, orgs: Orgs, idem: Idem
+) -> JSONResponse:
+    async def produce() -> tuple[int, Any]:
+        inv, role = await orgs.invite(principal, email=body.email, role_key=body.role)
+        out = InvitationOut(
+            id=inv.id,
+            email=inv.email,
+            role=role.key,
+            expires_at=inv.expires_at,
+            created_at=inv.created_at,
+        )
+        return 201, out.model_dump(mode="json")
+
+    return await idem.run(
+        request, principal.org_id, "invitations.create", body.model_dump(mode="json"), produce
     )
 
 

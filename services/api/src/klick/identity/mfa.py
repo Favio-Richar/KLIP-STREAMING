@@ -11,7 +11,9 @@ from datetime import UTC, datetime
 import pyotp
 import structlog
 from redis.asyncio import Redis
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from klick.core.audit import record_audit
 from klick.core.config import Settings
 from klick.core.crypto import Crypto, DecryptionError
 from klick.core.db import Database
@@ -46,6 +48,17 @@ class MfaChallenge:
 
 def _now() -> datetime:
     return datetime.now(UTC)
+
+
+async def _audit(s: AsyncSession, action: str, user_id: uuid.UUID) -> None:
+    await record_audit(
+        s,
+        action=action,
+        actor_type="user",
+        actor_id=user_id,
+        resource_type="user",
+        resource_id=user_id,
+    )
 
 
 def _aad(user_id: uuid.UUID) -> bytes:
@@ -144,6 +157,7 @@ class MfaService:
                     for c in codes
                 ],
             )
+            await _audit(s, "auth.mfa_enabled", user.id)
         await self._limiter.clear_failures("mfa", str(user.id))
         log.info("mfa_enabled", user_id=str(user.id))
         return codes
@@ -165,6 +179,7 @@ class MfaService:
             raise _invalid_code()
         async with self._db.global_session() as s:
             await repo.delete_mfa(s, user.id)
+            await _audit(s, "auth.mfa_disabled", user.id)
         await self._limiter.clear_failures("mfa", str(user.id))
         log.info("mfa_disabled", user_id=str(user.id))
 

@@ -10,6 +10,7 @@ import structlog
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from klick.core.audit import record_audit
 from klick.core.config import Settings
 from klick.core.db import Database
 from klick.core.email import Email, EmailSender
@@ -57,6 +58,21 @@ class AuthContext:
 
 def _now() -> datetime:
     return datetime.now(UTC)
+
+
+async def _audit(
+    s: AsyncSession, action: str, user_id: uuid.UUID, diff: dict[str, object] | None = None
+) -> None:
+    """Auditoría de identidad (sin organización) dentro de la transacción en curso."""
+    await record_audit(
+        s,
+        action=action,
+        actor_type="user",
+        actor_id=user_id,
+        resource_type="user",
+        resource_id=user_id,
+        diff=diff,
+    )
 
 
 def csrf_for_session(secret: str, session_id: uuid.UUID) -> str:
@@ -122,6 +138,7 @@ class IdentityService:
                     token = await self._create_auth_token(
                         s, created.id, PURPOSE_VERIFY, timedelta(hours=self._s.verify_email_ttl_h)
                     )
+                    await _audit(s, "auth.registered", created.id)
         except IntegrityError:  # carrera: otro registro del mismo correo ganó
             created = None
 
@@ -217,6 +234,7 @@ class IdentityService:
                 issued = await self._open_session(
                     s, user, family_id=new_id(), rotated_from=None, ip=ip, user_agent=user_agent
                 )
+                await _audit(s, "auth.login", user.id, {"method": "password"})
         await self._limiter.clear_failures("login", email)
         if issued is None:
             log.info("login_mfa_required", user_id=str(user.id))
@@ -250,6 +268,7 @@ class IdentityService:
             issued = await self._open_session(
                 s, user, family_id=new_id(), rotated_from=None, ip=ip, user_agent=user_agent
             )
+            await _audit(s, "auth.login", user.id, {"method": "second_factor_or_oidc"})
         log.info("session_started", user_id=str(user_id))
         return issued
 
@@ -322,6 +341,7 @@ class IdentityService:
             self._check_csrf(secret, row.id, csrf_header)
             if row.revoked_at is not None:
                 await repo.revoke_family(s, row.family_id, now)
+                await _audit(s, "auth.refresh_reuse_detected", row.user_id)
                 reuse_detected = True
             elif row.expires_at <= now:
                 raise unauthenticated("session_expired")
@@ -363,6 +383,7 @@ class IdentityService:
                 return
             self._check_csrf(secret, row.id, csrf_header)
             await repo.revoke_family(s, row.family_id, _now())
+            await _audit(s, "auth.logout", row.user_id)
 
     # ------------------------------------------------------------------ autenticación de peticiones
 
@@ -446,6 +467,7 @@ class IdentityService:
             if user.email_verified_at is None:
                 user.email_verified_at = now  # recibió el enlace en su correo
             await repo.revoke_all_for_user(s, user.id, now)
+            await _audit(s, "auth.password_reset", user.id)
         await self._limiter.clear_failures("login", user.email)
         log.info("password_reset", user_id=str(user.id))
 
@@ -462,3 +484,4 @@ class IdentityService:
             if row is None or row.user_id != ctx.user.id:
                 raise ApiError(404, "not_found", "Resource not found")
             await repo.revoke_family(s, row.family_id, _now())
+            await _audit(s, "auth.session_revoked", ctx.user.id, {"session_id": str(session_id)})

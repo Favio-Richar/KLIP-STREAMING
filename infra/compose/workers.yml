@@ -1,0 +1,54 @@
+# Workers y scheduler de Klick. Se combina con el compose principal:
+#   docker compose -f docker-compose.yml -f infra/compose/workers.yml --profile core up
+# Las rutas relativas se resuelven desde la raíz del proyecto (primer archivo -f).
+# En contenedor las bases y Redis se alcanzan por el nombre del servicio, no por localhost.
+x-klick-env: &klick-env
+  ENVIRONMENT: development
+  LOG_JSON: "true"
+  DATABASE_URL: postgresql+asyncpg://klick_app:${KLICK_APP_PASSWORD:-klick_app_dev_password}@postgres:5432/${POSTGRES_DB:-klick}
+  DATABASE_URL_SYSTEM: postgresql+asyncpg://klick_system:${KLICK_SYSTEM_PASSWORD:-klick_system_dev_password}@postgres:5432/${POSTGRES_DB:-klick}
+  REDIS_URL: redis://redis:6379/0
+  S3_ENDPOINT: http://minio:9000
+  APP_SECRET_KEY: ${APP_SECRET_KEY:-change-me-dev-only}
+  ENCRYPTION_MASTER_KEY: ${ENCRYPTION_MASTER_KEY:-change-me-dev-only-32-bytes-base64}
+
+x-klick-worker: &klick-worker
+  build:
+    context: .
+    dockerfile: infra/docker/api.Dockerfile
+  image: klick-api:dev
+  profiles: ["core"]
+  restart: unless-stopped
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  environment: *klick-env
+
+services:
+  worker-default:
+    <<: *klick-worker
+    command:
+      ["dramatiq", "klick.worker_main", "--queues", "default", "--processes", "1", "--threads", "4"]
+
+  worker-media:
+    <<: *klick-worker
+    command:
+      ["dramatiq", "klick.worker_main", "--queues", "media", "--processes", "1", "--threads", "2"]
+
+  # La GPU (faster-whisper) llega en F2 con el perfil `gpu`; esta cola ya existe desde F0.
+  worker-ai:
+    <<: *klick-worker
+    command:
+      ["dramatiq", "klick.worker_main", "--queues", "ai", "--processes", "1", "--threads", "1"]
+
+  worker-publish:
+    <<: *klick-worker
+    command:
+      ["dramatiq", "klick.worker_main", "--queues", "publish", "--processes", "1", "--threads", "2"]
+
+  # Un único scheduler: outbox, reconciliador de jobs, particiones y limpieza.
+  scheduler:
+    <<: *klick-worker
+    command: ["python", "-m", "klick.core.scheduler"]

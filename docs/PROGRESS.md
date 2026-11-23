@@ -16,7 +16,7 @@ Formato: `- [ ] ID título` → `- [x] ID título — AAAA-MM-DD — resultado`
 - [x] F0-08 MFA y acceso con Google — 2026-11-22 — TOTP con recuperación y anti-replay, secreto cifrado, desafío de login, Google OIDC (PKCE, nonce, fake en dev); 86 pruebas
 - [x] F0-09 Organizaciones y RBAC — 2026-11-22 — organizaciones, roles de sistema sembrados, membresías, invitaciones, tokens de API, Principal y X-Org-ID con RLS; 105 pruebas
 - [x] F0-10 Pruebas de aislamiento — 2026-11-22 — batería RLS genérica por tabla, arnés IDOR y matriz rol × endpoint auto-descubiertos; validadas con mutación; 126 pruebas
-- [ ] F0-11 Núcleo de ejecución
+- [x] F0-11 Núcleo de ejecución — 2026-11-22 — jobs, worker con latido/progreso/reintentos, reconciliador, scheduler, outbox→Redis Streams, idempotencia, auditoría append-only particionada, SSE y system.ping verificado de extremo a extremo en Docker; 195 pruebas
 - [ ] F0-12 Almacenamiento
 - [ ] F0-13 Interfaz base
 - [ ] F0-14 Cascarón de escritorio

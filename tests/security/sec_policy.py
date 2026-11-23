@@ -18,6 +18,8 @@ class Policy:
     permission: str | None = None
     # Endpoints donde el actor puede afectar su propio recurso sin permiso (p. ej. salir de la org).
     self_service: bool = False
+    # Respuesta infinita (SSE): se omite de las matrices que esperan una respuesta completa.
+    streaming: bool = False
 
 
 def _p(path: str) -> str:
@@ -60,6 +62,13 @@ POLICY: dict[tuple[str, str], Policy] = {
     ("GET", _p("/me/api-tokens")): Policy("org_header"),
     ("POST", _p("/me/api-tokens")): Policy("org_header"),
     ("DELETE", _p("/me/api-tokens/{token_id}")): Policy("org_header"),
+    ("POST", _p("/jobs")): Policy(
+        "org_header", "org:manage"
+    ),  # mientras todo kind público lo exija
+    ("GET", _p("/jobs")): Policy("org_header"),
+    ("GET", _p("/jobs/{job_id}")): Policy("org_header"),
+    ("POST", _p("/jobs/{job_id}/cancel")): Policy("org_header", "org:manage"),
+    ("GET", _p("/events/stream")): Policy("org_header", streaming=True),
     # --- organización por ruta --------------------------------------------------------------
     ("GET", _p("/orgs/{org_id}")): Policy("org_path"),
     ("PATCH", _p("/orgs/{org_id}")): Policy("org_path", "org:manage"),

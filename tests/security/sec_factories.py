@@ -12,7 +12,7 @@ from typing import Literal
 
 import asyncpg
 
-Kind = Literal["tenant", "reference", "org_root"]
+Kind = Literal["tenant", "reference", "org_root", "append_only"]
 
 
 @dataclass(frozen=True)
@@ -70,6 +70,39 @@ async def _api_tokens(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: Ctx) -> 
     )
 
 
+async def _jobs(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: Ctx) -> None:
+    await conn.execute(
+        "insert into jobs (id, org_id, queue, kind, correlation_id) "
+        "values (gen_random_uuid(), $1, 'default', 'system.ping', gen_random_uuid())",
+        org_id,
+    )
+
+
+async def _outbox_events(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: Ctx) -> None:
+    await conn.execute(
+        "insert into outbox_events (id, org_id, type, aggregate_type) "
+        "values (gen_random_uuid(), $1, 'x.y', 'x')",
+        org_id,
+    )
+
+
+async def _idempotency_keys(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: Ctx) -> None:
+    await conn.execute(
+        "insert into idempotency_keys (org_id, scope, key, request_hash, expires_at) "
+        "values ($1, 's', $2, 'h', now() + interval '1 day')",
+        org_id,
+        secrets.token_hex(8),
+    )
+
+
+async def _audit_events(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: Ctx) -> None:
+    await conn.execute(
+        "insert into audit_events (id, org_id, actor_type, action) "
+        "values (gen_random_uuid(), $1, 'system', 'x.y')",
+        org_id,
+    )
+
+
 # tabla -> (tipo, columna que identifica la organización, fábrica)
 FACTORIES: dict[str, tuple[Kind, str, Factory]] = {
     "organizations": ("org_root", "id", _organizations),
@@ -77,6 +110,11 @@ FACTORIES: dict[str, tuple[Kind, str, Factory]] = {
     "memberships": ("tenant", "org_id", _memberships),
     "invitations": ("tenant", "org_id", _invitations),
     "api_tokens": ("tenant", "org_id", _api_tokens),
+    "jobs": ("tenant", "org_id", _jobs),
+    "outbox_events": ("tenant", "org_id", _outbox_events),
+    "idempotency_keys": ("tenant", "org_id", _idempotency_keys),
+    # Append-only: la aplicación solo inserta y lee lo suyo; nunca UPDATE ni DELETE.
+    "audit_events": ("append_only", "org_id", _audit_events),
 }
 
 # Tablas SIN org_id permitidas (CLAUDE.md regla 2: toda tabla de negocio lleva org_id).

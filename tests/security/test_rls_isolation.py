@@ -26,9 +26,11 @@ async def _app(urls: dict[str, str]) -> asyncpg.Connection:
 
 
 async def _all_tables(conn: asyncpg.Connection) -> dict[str, set[str]]:
+    # Las particiones heredan la política del padre y no se consultan directamente.
     rows = await conn.fetch(
-        "select table_name, column_name from information_schema.columns "
-        "where table_schema = 'public'"
+        "select c.table_name, c.column_name from information_schema.columns c "
+        "join pg_class k on k.relname = c.table_name and k.relnamespace = 'public'::regnamespace "
+        "where c.table_schema = 'public' and not k.relispartition"
     )
     tables: dict[str, set[str]] = {}
     for r in rows:
@@ -163,11 +165,16 @@ async def test_isolation_between_two_organizations(
         assert not await app.fetch(f"select 1 from {table} where {key} = $1", org_b)
 
         # (b) no se puede modificar ni borrar lo de B
-        assert not await app.fetch(
-            f"update {table} set {key} = {key} where {key} = $1 returning 1",
-            org_b,
-        )
-        assert not await app.fetch(f"delete from {table} where {key} = $1 returning 1", org_b)
+        if kind == "append_only":  # ni siquiera lo propio: no hay privilegio de UPDATE/DELETE
+            with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                await app.fetch(f"update {table} set {key} = {key} where {key} = $1", org_b)
+            with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                await app.fetch(f"delete from {table} where {key} = $1", org_a)
+        else:
+            assert not await app.fetch(
+                f"update {table} set {key} = {key} where {key} = $1 returning 1", org_b
+            )
+            assert not await app.fetch(f"delete from {table} where {key} = $1 returning 1", org_b)
         # ... ni insertar en B estando en A
         with pytest.raises(asyncpg.InsufficientPrivilegeError):
             await make(app, org_b, ctx)
