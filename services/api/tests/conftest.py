@@ -9,8 +9,14 @@ from collections.abc import AsyncIterator, Iterator
 from pathlib import Path
 
 import asyncpg
+import httpx
 import pytest
+from harness import ApiHarness
 from klick.core.config import Settings
+from klick.core.email import MemoryEmailSender
+from klick.main import create_app
+from pydantic import SecretStr
+from redis.asyncio import Redis
 from sqlalchemy.engine import make_url
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -87,3 +93,42 @@ async def temp_db(_pg_available: None, pg_admin_dsn: str) -> AsyncIterator[dict[
 @pytest.fixture
 def alembic_cli() -> Iterator[object]:
     yield _alembic
+
+
+def _test_redis_url() -> str:
+    base = os.environ.get("REDIS_URL") or Settings().redis_url
+    return base.rsplit("/", 1)[0] + "/15"  # base 15: aislada de uso manual
+
+
+@pytest.fixture
+async def redis_client() -> AsyncIterator[Redis]:
+    client: Redis = Redis.from_url(_test_redis_url(), decode_responses=True)
+    try:
+        await client.ping()
+    except Exception as exc:  # noqa: BLE001
+        await client.aclose()
+        if os.environ.get("CI"):
+            raise
+        pytest.skip(f"Redis no disponible ({type(exc).__name__}); ejecute pnpm infra:up")
+    await client.flushdb()
+    yield client
+    await client.flushdb()
+    await client.aclose()
+
+
+@pytest.fixture
+async def api(temp_db: dict[str, str], redis_client: Redis) -> AsyncIterator[ApiHarness]:
+    settings = Settings(
+        environment="test",
+        database_url=temp_db["app"],
+        database_url_system=temp_db["system"],
+        redis_url=_test_redis_url(),
+        app_secret_key=SecretStr("test-secret-key-for-hmac-and-jwt-0123456789"),
+        public_web_url="http://web.test",
+    )
+    emails = MemoryEmailSender()
+    app = create_app(settings, email_sender=emails)
+    async with app.router.lifespan_context(app):
+        transport = httpx.ASGITransport(app=app, raise_app_exceptions=False)
+        async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
+            yield ApiHarness(app, client, emails, temp_db, redis_client, settings)

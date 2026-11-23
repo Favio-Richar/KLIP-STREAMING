@@ -6,6 +6,7 @@ import os
 from alembic import context
 from klick.core.config import get_settings
 from klick.core.models import Base
+from klick.identity import models as _identity_models  # noqa: F401
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 

@@ -2,21 +2,16 @@
 
 from collections.abc import Awaitable, Callable
 
-from fastapi import APIRouter
+from fastapi import APIRouter, FastAPI, Request
 from fastapi.responses import JSONResponse
 
 ReadinessCheck = Callable[[], Awaitable[None]]
 
-_checks: dict[str, ReadinessCheck] = {}
 
-
-def register_readiness_check(name: str, check: ReadinessCheck) -> None:
-    """La capa de datos, Redis y el almacenamiento registran aquí su sonda."""
-    _checks[name] = check
-
-
-def clear_readiness_checks() -> None:
-    _checks.clear()
+def register_readiness_check(app: FastAPI, name: str, check: ReadinessCheck) -> None:
+    """La capa de datos, Redis y el almacenamiento registran aquí su sonda (por aplicación)."""
+    checks: dict[str, ReadinessCheck] = app.state.readiness_checks
+    checks[name] = check
 
 
 router = APIRouter(tags=["health"])
@@ -28,9 +23,10 @@ async def healthz() -> dict[str, str]:
 
 
 @router.get("/readyz", summary="Readiness")
-async def readyz() -> JSONResponse:
+async def readyz(request: Request) -> JSONResponse:
+    checks: dict[str, ReadinessCheck] = request.app.state.readiness_checks
     results: dict[str, str] = {}
-    for name, check in _checks.items():
+    for name, check in checks.items():
         try:
             await check()
             results[name] = "ok"

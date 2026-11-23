@@ -11,3 +11,9 @@ Una línea por decisión que no estaba en la documentación. Formato: `AAAA-MM-D
 2026-11-22 · F0-06 · Las pruebas con base de datos crean una base temporal migrada con Alembic y se omiten si no hay PostgreSQL (fallan si CI=true) · aislamiento total y `pnpm check` utilizable sin infraestructura levantada
 2026-11-22 · F0-06 · Migración 0001 añade apply_reference_rls (tablas de referencia con org_id nulo) además de apply_tenant_rls · docs/04 §2 exige ambas políticas
 2026-11-22 · F0-06 · Los roles klick_app/klick_system se crean en la migración con contraseñas de KLICK_APP_PASSWORD/KLICK_SYSTEM_PASSWORD (defaults solo de desarrollo) y no se eliminan al hacer downgrade · son objetos del clúster
+2026-11-22 · F0-07 · Sesión web = JWT de acceso de 15 min en cookie HttpOnly + refresh opaco rotatorio en cookie con Path=/api/v1/auth; CSRF por HMAC ligado a la sesión (cookie legible + cabecera X-CSRF-Token) · ADR-017 pide cookie HttpOnly con refresco rotatorio; el HMAC evita guardar estado
+2026-11-22 · F0-07 · El inicio de sesión se permite sin correo verificado (se expone `email_verified`; las acciones sensibles lo exigirán más adelante) · evita bloquear el flujo de aceptación de F0 y la verificación sigue disponible
+2026-11-22 · F0-07 · Registro y recuperación responden 202 genérico y, si el correo ya existe, se le envía un aviso en vez de revelarlo · evita enumeración de cuentas (docs/09)
+2026-11-22 · F0-07 · Bloqueo progresivo por correo: 5 fallos libres en 15 min y luego 1, 2, 4... min (máx. 60); además tasa por IP · docs/09 exige bloqueo progresivo
+2026-11-22 · F0-07 · Los clientes web deben serializar el refresco (un solo vuelo) porque una carrera de dos refrescos con el mismo token se trata como reutilización · sin ventana de gracia para no debilitar la detección
+2026-11-22 · F0-07 · Singletons (BD, Redis, correo, sondas de salud) viven en app.state y no en módulos globales · permite varias apps en pruebas

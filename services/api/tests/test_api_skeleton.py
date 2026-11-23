@@ -5,13 +5,12 @@ import pytest
 from fastapi import FastAPI
 from klick.core.config import Settings
 from klick.core.errors import ApiError
-from klick.core.health import clear_readiness_checks, register_readiness_check
+from klick.core.health import register_readiness_check
 from klick.main import create_app
 
 
 @pytest.fixture
 def app() -> FastAPI:
-    clear_readiness_checks()
     app = create_app(Settings(environment="test", cors_allow_origins=["http://localhost:3000"]))
 
     @app.get("/_test/boom")
@@ -42,17 +41,17 @@ async def test_healthz(client: httpx.AsyncClient) -> None:
     assert r.json() == {"status": "ok"}
 
 
-async def test_readyz_reports_failing_dependency(client: httpx.AsyncClient) -> None:
+async def test_readyz_reports_failing_dependency(app: FastAPI, client: httpx.AsyncClient) -> None:
     async def ok() -> None:
         return None
 
     async def down() -> None:
         raise ConnectionError("db password=hunter2")
 
-    register_readiness_check("ok", ok)
+    register_readiness_check(app, "ok", ok)
     r = await client.get("/readyz")
     assert r.status_code == 200
-    register_readiness_check("db", down)
+    register_readiness_check(app, "db", down)
     r = await client.get("/readyz")
     assert r.status_code == 503
     assert r.json()["checks"] == {"ok": "ok", "db": "unavailable"}

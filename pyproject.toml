@@ -23,6 +23,7 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "S", "ASYNC"]
+ignore = ["E501"]  # el formateador acota el código; las cadenas largas son aceptables
 
 [tool.ruff.lint.per-file-ignores]
 "scripts/gen-progress.py" = ["E501", "E701", "E702", "E741"]
@@ -41,5 +42,5 @@ strict = true
 python_version = "3.12"
 files = ["services/api/src", "services/api/tests", "services/api/alembic"]
 exclude = ["services/api/alembic/versions/"]
-mypy_path = ["services/api/src"]
+mypy_path = ["services/api/src", "services/api/tests"]
 explicit_package_bases = true

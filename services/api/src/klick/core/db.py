@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from klick.core.config import Settings, get_settings
+from klick.core.config import Settings
 
 _SET_ORG_SQL = text("select set_config('app.org_id', :org_id, true)")
 
@@ -67,20 +67,3 @@ class Database:
         await self._app_engine.dispose()
         if self._system_engine is not None:
             await self._system_engine.dispose()
-
-
-_database: Database | None = None
-
-
-def get_database() -> Database:
-    global _database  # noqa: PLW0603 - singleton de proceso, creado de forma perezosa
-    if _database is None:
-        _database = Database(get_settings())
-    return _database
-
-
-async def dispose_database() -> None:
-    global _database  # noqa: PLW0603
-    if _database is not None:
-        await _database.dispose()
-        _database = None
