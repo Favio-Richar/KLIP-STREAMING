@@ -13,7 +13,9 @@ import httpx
 import pytest
 from harness import ApiHarness
 from klick.core.config import Settings
+from klick.core.db import Database
 from klick.core.email import MemoryEmailSender
+from klick.core.seed import seed_permissions_and_roles
 from klick.main import create_app
 from pydantic import SecretStr
 from redis.asyncio import Redis
@@ -82,6 +84,12 @@ async def temp_db(_pg_available: None, pg_admin_dsn: str) -> AsyncIterator[dict[
         "app": _with_db(owner_url, name, "klick_app", "klick_app_dev_password"),
         "system": _with_db(owner_url, name, "klick_system", "klick_system_dev_password"),
     }
+    seed_db = Database(Settings(database_url=urls["system"]))
+    try:
+        async with seed_db.global_session() as session:
+            await seed_permissions_and_roles(session)
+    finally:
+        await seed_db.dispose()
     try:
         yield urls
     finally:

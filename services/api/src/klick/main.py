@@ -22,6 +22,13 @@ from klick.identity.mfa import MfaService
 from klick.identity.oidc import OidcProvider, OidcService, build_oidc_provider
 from klick.identity.router import auth_router, me_router
 from klick.identity.service import IdentityService
+from klick.orgs.router import (
+    invitations_router,
+    members_router,
+    orgs_router,
+    tokens_router,
+)
+from klick.orgs.service import OrgService
 
 API_PREFIX = "/api/v1"
 
@@ -49,6 +56,9 @@ def create_app(
         app.state.oidc_service = OidcService(db, redis, provider, settings)
         app.state.identity_service = IdentityService(
             db, limiter, email_sender or build_email_sender(settings), settings, mfa
+        )
+        app.state.org_service = OrgService(
+            db, email_sender or build_email_sender(settings), settings
         )
         register_readiness_check(app, "db", db.ping)
         register_readiness_check(app, "redis", redis.ping)  # type: ignore[arg-type]
@@ -83,6 +93,10 @@ def create_app(
     api_router = APIRouter(prefix=API_PREFIX)
     api_router.include_router(auth_router)
     api_router.include_router(me_router)
+    api_router.include_router(tokens_router)
+    api_router.include_router(orgs_router)
+    api_router.include_router(members_router)
+    api_router.include_router(invitations_router)
     app.include_router(api_router)
     return app
 

@@ -14,7 +14,7 @@ Formato: `- [ ] ID título` → `- [x] ID título — AAAA-MM-DD — resultado`
 - [x] F0-06 Capa de datos — 2026-11-22 — motor async, tenant_session con app.org_id, roles app/system, Alembic, migración 0001 reversible; 18 pruebas (RLS real)
 - [x] F0-07 Identidad — 2026-11-22 — registro, login, logout, refresco rotatorio con detección de reutilización, verificación de correo, recuperación, tasa y bloqueo; 45 pruebas
 - [x] F0-08 MFA y acceso con Google — 2026-11-22 — TOTP con recuperación y anti-replay, secreto cifrado, desafío de login, Google OIDC (PKCE, nonce, fake en dev); 86 pruebas
-- [ ] F0-09 Organizaciones y RBAC
+- [x] F0-09 Organizaciones y RBAC — 2026-11-22 — organizaciones, roles de sistema sembrados, membresías, invitaciones, tokens de API, Principal y X-Org-ID con RLS; 105 pruebas
 - [ ] F0-10 Pruebas de aislamiento
 - [ ] F0-11 Núcleo de ejecución
 - [ ] F0-12 Almacenamiento

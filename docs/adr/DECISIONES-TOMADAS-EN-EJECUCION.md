@@ -22,3 +22,10 @@ Una línea por decisión que no estaba en la documentación. Formato: `AAAA-MM-D
 2026-11-22 · F0-08 · El desafío MFA del login vive en Redis (5 min, un solo uso, 5 intentos) y los códigos de recuperación se guardan como SHA-256 · estado efímero; los códigos tienen ~50 bits y se consumen de forma atómica
 2026-11-22 · F0-08 · Google OIDC: si el correo local existe sin verificar, se descarta su contraseña y sus sesiones antes de vincular; si está verificado, se vincula · previene el secuestro previo al registro
 2026-11-22 · F0-08 · Proveedor `fake` de Google solo si no hay credenciales, FEATURE_FAKE_ADAPTERS=true y no es producción; con producción se exige APP_SECRET_KEY y ENCRYPTION_MASTER_KEY no por defecto · el fake no puede quedar activo en producción por error
+2026-11-22 · F0-09 · RLS de organizations/memberships/invitations/api_tokens usa además `app.user_id` y los GUC `app.invite_token_hash` y `app.token_hash` (lista blanca en core.db.set_context) · permite listar mis organizaciones y resolver una invitación o un token sin saltarse RLS ni usar el rol de sistema
+2026-11-22 · F0-09 · Regla anti-escalada: un rol, invitación o token solo puede otorgar permisos que el actor ya tiene; un admin no puede degradar ni expulsar a un owner · evita escalada de privilegios (docs/09)
+2026-11-22 · F0-09 · Aceptar una invitación exige sesión con el mismo correo y correo verificado · el token por sí solo no basta si se filtra
+2026-11-22 · F0-09 · Un token de API no puede crear otros tokens y su Principal usa scopes ∩ permisos actuales del rol · limita persistencia y escalada tras un robo de token
+2026-11-22 · F0-09 · Se corrigió el downgrade() de la migración 0004 (soltar la política org_select antes de borrar tablas) antes de commitearla; el esquema aplicado no cambió · el downgrade fallaba por dependencia entre políticas
+2026-11-22 · F0-09 · La tabla `devices` (docs/04 §3.2) se difiere a F0-14 (escritorio) · no la usa ninguna tarea anterior
+2026-11-22 · F0-09 · Los cambios de rol, altas/bajas de miembros y tokens se registran con structlog; pasan a `audit_events` en F0-11 cuando exista la tabla · la tabla de auditoría aún no existe
