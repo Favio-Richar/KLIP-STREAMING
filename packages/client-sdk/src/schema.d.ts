@@ -472,6 +472,23 @@ export interface paths {
     patch: operations["update_edit_project_api_v1_clips__clip_id__edit_project_patch"];
     trace?: never;
   };
+  "/api/v1/clips/{clip_id}/render": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Start Render */
+    post: operations["start_render_api_v1_clips__clip_id__render_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/clips/{clip_id}/versions": {
     parameters: {
       query?: never;
@@ -859,6 +876,74 @@ export interface paths {
     head?: never;
     /** Update Project */
     patch: operations["update_project_api_v1_projects__project_id__patch"];
+    trace?: never;
+  };
+  "/api/v1/render-jobs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Render Jobs */
+    get: operations["list_render_jobs_api_v1_render_jobs_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/render-jobs/{render_job_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Render Job */
+    get: operations["get_render_job_api_v1_render_jobs__render_job_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/render-jobs/{render_job_id}/cancel": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Cancel Render Job */
+    post: operations["cancel_render_job_api_v1_render_jobs__render_job_id__cancel_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/render-presets": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Presets */
+    get: operations["list_presets_api_v1_render_presets_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   "/api/v1/tags": {
@@ -1454,6 +1539,31 @@ export interface components {
       /** Part Numbers */
       part_numbers: number[];
     };
+    /** PresetOut */
+    PresetOut: {
+      /** Audio Bitrate Kbps */
+      audio_bitrate_kbps: number;
+      /** Audio Codec */
+      audio_codec: string;
+      /** Container */
+      container: string;
+      /** Crf */
+      crf: number;
+      /** Fps */
+      fps: number;
+      /** Height */
+      height: number;
+      /** Is System */
+      is_system: boolean;
+      /** Key */
+      key: string;
+      /** Loudness Target Lufs */
+      loudness_target_lufs: number;
+      /** Video Codec */
+      video_codec: string;
+      /** Width */
+      width: number;
+    };
     /** ProjectCreate */
     ProjectCreate: {
       /** Description */
@@ -1521,6 +1631,60 @@ export interface components {
       email: string;
       /** Password */
       password: string;
+    };
+    /** RenderJobOut */
+    RenderJobOut: {
+      /**
+       * Clip Id
+       * Format: uuid
+       */
+      clip_id: string;
+      /**
+       * Clip Version Id
+       * Format: uuid
+       */
+      clip_version_id: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Error */
+      error: {
+        [key: string]: unknown;
+      } | null;
+      /** Finished At */
+      finished_at: string | null;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Output Asset Id */
+      output_asset_id: string | null;
+      /** Preset Key */
+      preset_key: string;
+      /** Progress */
+      progress: number;
+      /** Started At */
+      started_at: string | null;
+      /** Status */
+      status: string;
+    };
+    /** RenderJobPage */
+    RenderJobPage: {
+      /** Items */
+      items: components["schemas"]["RenderJobOut"][];
+      /** Next Cursor */
+      next_cursor: string | null;
+    };
+    /** RenderRequest */
+    RenderRequest: {
+      /**
+       * Preset Key
+       * @default 9x16_1080_30
+       */
+      preset_key: string;
     };
     /** ResetPasswordRequest */
     ResetPasswordRequest: {
@@ -2827,6 +2991,41 @@ export interface operations {
       };
     };
   };
+  start_render_api_v1_clips__clip_id__render_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        clip_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RenderRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RenderJobOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   list_versions_api_v1_clips__clip_id__versions_get: {
     parameters: {
       query?: {
@@ -3847,6 +4046,122 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_render_jobs_api_v1_render_jobs_get: {
+    parameters: {
+      query?: {
+        limit?: number;
+        cursor?: string | null;
+        clip_id?: string | null;
+        status?: ("queued" | "running" | "succeeded" | "failed" | "canceled") | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RenderJobPage"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_render_job_api_v1_render_jobs__render_job_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        render_job_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RenderJobOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  cancel_render_job_api_v1_render_jobs__render_job_id__cancel_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        render_job_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RenderJobOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_presets_api_v1_render_presets_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PresetOut"][];
         };
       };
     };

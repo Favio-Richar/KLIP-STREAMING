@@ -227,6 +227,43 @@ async def _clip_versions(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: Ctx) 
     )
 
 
+async def _render_presets(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: Ctx) -> None:
+    await conn.execute(
+        "insert into render_presets (id, org_id, key, width, height, fps) "
+        "values (gen_random_uuid(), $1, $2, 1080, 1920, 30)",
+        org_id,
+        f"custom-{secrets.token_hex(4)}",
+    )
+
+
+async def _render_jobs(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: Ctx) -> None:
+    clip = await _clip(conn, org_id)
+    version = await conn.fetchval(
+        "insert into clip_versions (id, org_id, clip_id, version, schema_version, document) "
+        "values (gen_random_uuid(), $1, $2, 1, '1.0', '{}'::jsonb) returning id",
+        org_id,
+        clip,
+    )
+    preset = await conn.fetchval("select id from render_presets where org_id is null limit 1")
+    await conn.execute(
+        "insert into render_jobs (id, org_id, clip_id, clip_version_id, preset_id) "
+        "values (gen_random_uuid(), $1, $2, $3, $4)",
+        org_id,
+        clip,
+        version,
+        preset,
+    )
+
+
+async def _usage_records(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: Ctx) -> None:
+    await conn.execute(
+        "insert into usage_records (id, org_id, metric, quantity, unit, source_type, idempotency_key) "
+        "values (gen_random_uuid(), $1, 'render_s', 1, 's', 'render_job', $2)",
+        org_id,
+        secrets.token_hex(8),
+    )
+
+
 # tabla -> (tipo, columna que identifica la organización, fábrica)
 FACTORIES: dict[str, tuple[Kind, str, Factory]] = {
     "organizations": ("org_root", "id", _organizations),
@@ -246,6 +283,10 @@ FACTORIES: dict[str, tuple[Kind, str, Factory]] = {
     "uploads": ("tenant", "org_id", _uploads),
     "asset_tags": ("tenant", "org_id", _asset_tags),
     "clips": ("tenant", "org_id", _clips),
+    "render_presets": ("reference", "org_id", _render_presets),
+    "render_jobs": ("tenant", "org_id", _render_jobs),
+    # Consumo facturable: solo inserción (REVOKE + trigger); sin FK a organizations.
+    "usage_records": ("append_only", "org_id", _usage_records),
     "edit_projects": ("tenant", "org_id", _edit_projects),
     # Inmutable (trigger): la aplicación solo inserta y lee lo suyo; nunca UPDATE ni DELETE.
     "clip_versions": ("append_only", "org_id", _clip_versions),

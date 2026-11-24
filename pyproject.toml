@@ -46,6 +46,7 @@ ignore = ["E501"]  # el formateador acota el código; las cadenas largas son ace
 # Las pruebas de imagen invocan `docker` (herramienta fija, argumentos propios, sin entrada externa).
 "tests/media/**" = ["S603", "S607"]
 "services/api/tests/test_render_ffmpeg.py" = ["S603", "S607"]
+"services/api/tests/test_render_job.py" = ["S603", "S607"]
 # Modelos generados desde el JSON Schema (packages/video-project-schema): su formato lo fija el generador.
 "services/api/src/klick/edit_project/models.py" = ["I001"]
 

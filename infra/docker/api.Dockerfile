@@ -58,4 +58,4 @@ COPY --chown=klick services/api/tests services/api/tests
 COPY --chown=klick packages/video-project-schema/fixtures packages/video-project-schema/fixtures
 USER klick
 ENV KLICK_REQUIRE_FFMPEG=1
-CMD ["pytest", "services/api/tests/test_media_ffmpeg.py", "services/api/tests/test_media_probe.py", "services/api/tests/test_render_ffmpeg.py", "-q", "-p", "no:cacheprovider"]
+CMD ["pytest", "services/api/tests/test_media_ffmpeg.py", "services/api/tests/test_media_probe.py", "services/api/tests/test_render_ffmpeg.py", "services/api/tests/test_render_job.py", "-q", "-p", "no:cacheprovider"]

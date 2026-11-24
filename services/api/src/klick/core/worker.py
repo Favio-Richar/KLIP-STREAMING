@@ -66,6 +66,14 @@ class JobContext:
         self.worker_id = deps.worker_id
 
     @property
+    def dispatcher(self) -> Dispatcher:
+        return self._deps.dispatcher
+
+    @property
+    def redis(self) -> Redis:
+        return self._deps.redis
+
+    @property
     def db(self) -> Database:
         return self._deps.db
 

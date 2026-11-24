@@ -47,6 +47,8 @@ from klick.orgs.router import (
     tokens_router,
 )
 from klick.orgs.service import OrgService
+from klick.render.router import render_router
+from klick.render.service import RenderService
 from klick.storage.backend import S3Backend
 from klick.storage.service import StorageService
 from klick.system.router import events_router, jobs_router
@@ -91,6 +93,7 @@ def create_app(
         app.state.storage_service = StorageService(db, storage, settings)
         app.state.media_service = MediaService(db, app.state.storage_service, app.state.job_service)
         app.state.clip_service = ClipService(db, app.state.media_service)
+        app.state.render_service = RenderService(db, app.state.clip_service, app.state.job_service)
         app.state.upload_service = UploadService(
             db, storage, app.state.storage_service, app.state.media_service, settings
         )
@@ -148,6 +151,7 @@ def create_app(
     api_router.include_router(uploads_router)
     api_router.include_router(assets_router)
     api_router.include_router(clips_router)
+    api_router.include_router(render_router)
     api_router.include_router(jobs_router)
     api_router.include_router(events_router)
     app.include_router(api_router)

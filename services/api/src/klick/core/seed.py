@@ -1,4 +1,4 @@
-"""Semillas del sistema (idempotentes): permisos y roles de sistema. ``pnpm db:seed``."""
+"""Semillas del sistema (idempotentes): permisos, roles y presets de render. ``pnpm db:seed``."""
 
 import asyncio
 
@@ -11,12 +11,45 @@ from klick.core.db import Database
 from klick.core.ids import new_id
 from klick.orgs.models import Permission, Role, RolePermission
 from klick.orgs.permissions import PERMISSIONS, ROLE_NAMES, ROLE_PERMISSIONS
+from klick.render.models import RenderPresetRow
+from klick.render.presets import SYSTEM_PRESETS
 
 log = structlog.get_logger("klick.seed")
 
 
+async def seed_render_presets(session: AsyncSession) -> None:
+    """Presets de exportación del sistema (``org_id`` nulo). Se actualizan si cambian en el código."""
+    existing = {
+        p.key: p
+        for p in (
+            await session.execute(select(RenderPresetRow).where(RenderPresetRow.org_id.is_(None)))
+        ).scalars()
+    }
+    for key, preset in SYSTEM_PRESETS.items():
+        row = existing.get(key) or RenderPresetRow(id=new_id(), org_id=None, key=key)
+        row.width, row.height, row.fps, row.crf = (
+            preset.width,
+            preset.height,
+            preset.fps,
+            preset.crf,
+        )
+        row.max_bitrate_kbps = preset.max_bitrate_kbps
+        row.audio_bitrate_kbps = preset.audio_bitrate_kbps
+        row.loudness_target_lufs = preset.loudness_target_lufs  # type: ignore[assignment]
+        row.container, row.video_codec, row.audio_codec = (
+            preset.container,
+            preset.video_codec,
+            preset.audio_codec,
+        )
+        row.is_system = True
+        if key not in existing:
+            session.add(row)
+    await session.flush()
+
+
 async def seed_permissions_and_roles(session: AsyncSession) -> None:
-    """Requiere un rol con BYPASSRLS (klick_system): los roles de sistema tienen org_id nulo."""
+    """Permisos, roles de sistema y presets de render. Requiere un rol con BYPASSRLS
+    (klick_system): los roles y presets de sistema tienen org_id nulo."""
     existing = {p.key: p for p in (await session.execute(select(Permission))).scalars()}
     for key, description in PERMISSIONS.items():
         if key in existing:
@@ -45,6 +78,7 @@ async def seed_permissions_and_roles(session: AsyncSession) -> None:
         await session.execute(delete(RolePermission).where(RolePermission.role_id == role.id))
         session.add_all(RolePermission(role_id=role.id, permission_key=p) for p in sorted(perms))
     await session.flush()
+    await seed_render_presets(session)
 
 
 async def main() -> None:

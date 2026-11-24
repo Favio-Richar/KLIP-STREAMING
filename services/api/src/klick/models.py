@@ -18,6 +18,7 @@ MODEL_MODULES = (
     "klick.storage.models",
     "klick.media.models",
     "klick.clips.models",
+    "klick.render.models",
 )
 
 

@@ -314,7 +314,7 @@ class ClipService:
                 )
             ).scalar_one()
 
-    async def _reference_issues(self, org_id: uuid.UUID, doc: EditProject) -> list[Issue]:
+    async def reference_issues(self, org_id: uuid.UUID, doc: EditProject) -> list[Issue]:
         """Las fuentes deben ser assets reales de esta organización, del tipo y estado correctos."""
         ids = {uuid.UUID(s.asset_id) for s in doc.sources}
         assets = await self._media.assets_by_ids(org_id, ids)
@@ -385,7 +385,7 @@ class ClipService:
             parsed = parse_edit_project(document)
         except EditProjectInvalid as exc:
             raise _issues_error(exc.issues) from None
-        issues = await self._reference_issues(principal.org_id, parsed)
+        issues = await self.reference_issues(principal.org_id, parsed)
         if issues:
             raise _issues_error(issues)
 

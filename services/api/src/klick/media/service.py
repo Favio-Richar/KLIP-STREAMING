@@ -783,6 +783,43 @@ class MediaService:
             ).scalars()
             return {a.id: a for a in rows}
 
+    async def create_render_asset(
+        self,
+        org_id: uuid.UUID,
+        *,
+        title: str,
+        storage_object_id: uuid.UUID,
+        project_id: uuid.UUID | None,
+        created_by: uuid.UUID | None,
+    ) -> MediaAsset:
+        """Registra el video exportado por un render (``source_type = 'render'``). Queda en
+        ``processing``: el análisis (`media.probe`) le da metadatos, miniatura y el estado listo.
+        Lo crea el worker, sin una persona delante: no pide confirmación de derechos."""
+        asset = MediaAsset(
+            id=new_id(),
+            org_id=org_id,
+            project_id=project_id,
+            kind="video",
+            source_type="render",
+            title=title.strip()[:300],
+            original_filename=f"{title.strip()[:100]}.mp4",
+            status="processing",
+            storage_object_id=storage_object_id,
+            created_by=created_by,
+        )
+        async with self._db.tenant_session(org_id, created_by) as s:
+            s.add(asset)
+            await s.flush()
+            await emit(
+                s,
+                type="asset.created",
+                org_id=org_id,
+                aggregate_type="asset",
+                aggregate_id=asset.id,
+                payload={"id": str(asset.id), "status": "processing", "source": "render"},
+            )
+        return asset
+
     async def find_ready_asset_by_object(
         self, org_id: uuid.UUID, storage_object_id: uuid.UUID
     ) -> MediaAsset | None:

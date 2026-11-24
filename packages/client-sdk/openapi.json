@@ -1513,6 +1513,69 @@
         "title": "PartsRequest",
         "type": "object"
       },
+      "PresetOut": {
+        "properties": {
+          "audio_bitrate_kbps": {
+            "title": "Audio Bitrate Kbps",
+            "type": "integer"
+          },
+          "audio_codec": {
+            "title": "Audio Codec",
+            "type": "string"
+          },
+          "container": {
+            "title": "Container",
+            "type": "string"
+          },
+          "crf": {
+            "title": "Crf",
+            "type": "integer"
+          },
+          "fps": {
+            "title": "Fps",
+            "type": "integer"
+          },
+          "height": {
+            "title": "Height",
+            "type": "integer"
+          },
+          "is_system": {
+            "title": "Is System",
+            "type": "boolean"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "loudness_target_lufs": {
+            "title": "Loudness Target Lufs",
+            "type": "number"
+          },
+          "video_codec": {
+            "title": "Video Codec",
+            "type": "string"
+          },
+          "width": {
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "key",
+          "width",
+          "height",
+          "fps",
+          "container",
+          "video_codec",
+          "audio_codec",
+          "crf",
+          "audio_bitrate_kbps",
+          "loudness_target_lufs",
+          "is_system"
+        ],
+        "title": "PresetOut",
+        "type": "object"
+      },
       "ProjectCreate": {
         "additionalProperties": false,
         "properties": {
@@ -1726,6 +1789,148 @@
           "display_name"
         ],
         "title": "RegisterRequest",
+        "type": "object"
+      },
+      "RenderJobOut": {
+        "properties": {
+          "clip_id": {
+            "format": "uuid",
+            "title": "Clip Id",
+            "type": "string"
+          },
+          "clip_version_id": {
+            "format": "uuid",
+            "title": "Clip Version Id",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "output_asset_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Asset Id"
+          },
+          "preset_key": {
+            "title": "Preset Key",
+            "type": "string"
+          },
+          "progress": {
+            "title": "Progress",
+            "type": "integer"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "clip_id",
+          "clip_version_id",
+          "preset_key",
+          "status",
+          "progress",
+          "output_asset_id",
+          "error",
+          "started_at",
+          "finished_at",
+          "created_at"
+        ],
+        "title": "RenderJobOut",
+        "type": "object"
+      },
+      "RenderJobPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RenderJobOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "title": "RenderJobPage",
+        "type": "object"
+      },
+      "RenderRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "preset_key": {
+            "default": "9x16_1080_30",
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Preset Key",
+            "type": "string"
+          }
+        },
+        "title": "RenderRequest",
         "type": "object"
       },
       "ResetPasswordRequest": {
@@ -4065,6 +4270,59 @@
         ]
       }
     },
+    "/api/v1/clips/{clip_id}/render": {
+      "post": {
+        "operationId": "start_render_api_v1_clips__clip_id__render_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "clip_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Clip Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenderJobOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Render",
+        "tags": [
+          "render"
+        ]
+      }
+    },
     "/api/v1/clips/{clip_id}/versions": {
       "get": {
         "operationId": "list_versions_api_v1_clips__clip_id__versions_get",
@@ -5568,6 +5826,219 @@
         "summary": "Update Project",
         "tags": [
           "media"
+        ]
+      }
+    },
+    "/api/v1/render-jobs": {
+      "get": {
+        "operationId": "list_render_jobs_api_v1_render_jobs_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "clip_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Clip Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "queued",
+                    "running",
+                    "succeeded",
+                    "failed",
+                    "canceled"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenderJobPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Render Jobs",
+        "tags": [
+          "render"
+        ]
+      }
+    },
+    "/api/v1/render-jobs/{render_job_id}": {
+      "get": {
+        "operationId": "get_render_job_api_v1_render_jobs__render_job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "render_job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Render Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenderJobOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Render Job",
+        "tags": [
+          "render"
+        ]
+      }
+    },
+    "/api/v1/render-jobs/{render_job_id}/cancel": {
+      "post": {
+        "operationId": "cancel_render_job_api_v1_render_jobs__render_job_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "render_job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Render Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenderJobOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Render Job",
+        "tags": [
+          "render"
+        ]
+      }
+    },
+    "/api/v1/render-presets": {
+      "get": {
+        "operationId": "list_presets_api_v1_render_presets_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PresetOut"
+                  },
+                  "title": "Response List Presets Api V1 Render Presets Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Presets",
+        "tags": [
+          "render"
         ]
       }
     },
