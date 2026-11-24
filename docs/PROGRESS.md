@@ -28,7 +28,7 @@ Formato: `- [ ] ID título` → `- [x] ID título — AAAA-MM-DD — resultado`
 ## F1 — Media y Clip Studio
 
 - [x] F1-01 Módulo `media` — 2026-11-24 — migración 0007 reversible (7 tablas, FKs compuestas, RLS, triggers de ref_count e invariantes), servicio, API de proyectos/carpetas/etiquetas/assets/derivados, estados y subidas; 15 pruebas propias + arnés de seguridad ampliado
-- [ ] F1-02 Subida multipart
+- [x] F1-02 Subida multipart — 2026-11-24 — API multipart (inicio idempotente, estado, URLs por lote, completar con verificación de tamaño, abortar), deduplicación por sha256 verificado, derechos con fecha y usuario (migración 0008), recolector de subidas vencidas, cargador web con progreso/pausa/reanudación y pantalla /library; E2E real contra MinIO
 - [ ] F1-03 Imagen `worker-media`
 - [ ] F1-04 Trabajo `media.probe`
 - [ ] F1-05 Biblioteca

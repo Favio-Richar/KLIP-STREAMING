@@ -7,16 +7,20 @@ import uuid
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, Query, Request, Response, status
+from fastapi import APIRouter, Depends, Header, Query, Request, Response, status
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from klick.core.idempotency import Idem, validate_key
 from klick.media.service import UNSET, AssetView, MediaService
+from klick.media.uploads import UploadService, UploadState
 from klick.orgs.deps import CurrentPrincipal
 
 projects_router = APIRouter(prefix="/projects", tags=["media"])
 folders_router = APIRouter(prefix="/folders", tags=["media"])
 tags_router = APIRouter(prefix="/tags", tags=["media"])
 assets_router = APIRouter(prefix="/assets", tags=["media"])
+# Se incluye ANTES que assets_router: `/assets/uploads/...` no debe tomarse como `/assets/{asset_id}`.
+uploads_router = APIRouter(prefix="/assets/uploads", tags=["media"])
 
 
 def get_media_service(request: Request) -> MediaService:
@@ -24,7 +28,13 @@ def get_media_service(request: Request) -> MediaService:
     return service
 
 
+def get_upload_service(request: Request) -> UploadService:
+    service: UploadService = request.app.state.upload_service
+    return service
+
+
 Media = Annotated[MediaService, Depends(get_media_service)]
+Uploads = Annotated[UploadService, Depends(get_upload_service)]
 Limit = Annotated[int, Query(ge=1, le=200)]
 
 READ, WRITE = "media:read", "media:write"
@@ -422,3 +432,133 @@ async def download_url(
     principal.require(READ)
     url = await media.download_url(principal.org_id, asset_id)
     return DownloadUrl(url=url, expires_in=request.app.state.settings.storage_url_ttl_s)
+
+
+# ------------------------------------------------------------------------------------ subidas
+
+
+class UploadStart(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    filename: str = Field(min_length=1, max_length=300)
+    size_bytes: int = Field(ge=1)
+    content_type: str | None = Field(default=None, max_length=120)
+    title: str | None = Field(default=None, max_length=300)
+    project_id: uuid.UUID | None = None
+    folder_id: uuid.UUID | None = None
+    sha256: str | None = Field(default=None, max_length=64)
+    rights_confirmed: bool = Field(
+        description="Confirmación explícita: 'tengo derecho a usar este contenido'."
+    )
+
+
+class UploadInfo(BaseModel):
+    id: uuid.UUID
+    asset_id: uuid.UUID
+    status: str
+    part_size: int
+    total_parts: int
+    size_bytes: int
+    uploaded_parts: list[int]
+    expires_at: datetime
+
+    @classmethod
+    def of(cls, st: UploadState) -> "UploadInfo":
+        u = st.upload
+        return cls(
+            id=u.id,
+            asset_id=u.asset_id,
+            status=u.status,
+            part_size=u.part_size or 0,
+            total_parts=st.total_parts,
+            size_bytes=u.size_bytes or 0,
+            uploaded_parts=st.uploaded_parts,
+            expires_at=u.expires_at,
+        )
+
+
+class UploadStarted(BaseModel):
+    deduplicated: bool
+    upload: UploadInfo | None
+    asset: AssetOut
+
+
+class PartsRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    part_numbers: list[int] = Field(min_length=1, max_length=200)
+
+
+class PartUrls(BaseModel):
+    urls: dict[int, str]
+    expires_in: int
+
+
+@uploads_router.post("", status_code=status.HTTP_201_CREATED, response_model=UploadStarted)
+async def start_upload(
+    body: UploadStart,
+    request: Request,
+    principal: CurrentPrincipal,
+    uploads: Uploads,
+    media: Media,
+    idem: Idem,
+    idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
+) -> Any:
+    principal.require(WRITE)
+    if idempotency_key:
+        validate_key(idempotency_key)
+
+    async def produce() -> tuple[int, Any]:
+        result = await uploads.start(
+            principal,
+            filename=body.filename,
+            size_bytes=body.size_bytes,
+            content_type=body.content_type,
+            rights_confirmed=body.rights_confirmed,
+            title=body.title,
+            project_id=body.project_id,
+            folder_id=body.folder_id,
+            sha256=body.sha256,
+        )
+        view = await media.get_asset(principal.org_id, result.asset.id)
+        info = None
+        if result.upload is not None:
+            info = UploadInfo.of(await uploads.state(principal.org_id, result.upload.id))
+        out = UploadStarted(deduplicated=result.deduplicated, upload=info, asset=AssetOut.of(view))
+        return 201, out.model_dump(mode="json")
+
+    return await idem.run(
+        request, principal.org_id, "uploads.start", body.model_dump(mode="json"), produce
+    )
+
+
+@uploads_router.get("/{upload_id}", response_model=UploadInfo)
+async def get_upload(upload_id: uuid.UUID, principal: CurrentPrincipal, uploads: Uploads) -> Any:
+    principal.require(WRITE)
+    return UploadInfo.of(await uploads.state(principal.org_id, upload_id))
+
+
+@uploads_router.post("/{upload_id}/parts", response_model=PartUrls)
+async def upload_part_urls(
+    upload_id: uuid.UUID, body: PartsRequest, principal: CurrentPrincipal, uploads: Uploads
+) -> PartUrls:
+    principal.require(WRITE)
+    urls, ttl = await uploads.part_urls(principal.org_id, upload_id, body.part_numbers)
+    return PartUrls(urls=urls, expires_in=ttl)
+
+
+@uploads_router.post("/{upload_id}/complete", response_model=AssetOut)
+async def complete_upload(
+    upload_id: uuid.UUID, principal: CurrentPrincipal, uploads: Uploads
+) -> AssetOut:
+    principal.require(WRITE)
+    return AssetOut.of(await uploads.complete(principal, upload_id))
+
+
+@uploads_router.post("/{upload_id}/abort", status_code=status.HTTP_204_NO_CONTENT)
+async def abort_upload(
+    upload_id: uuid.UUID, principal: CurrentPrincipal, uploads: Uploads
+) -> Response:
+    principal.require(WRITE)
+    await uploads.abort(principal, upload_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

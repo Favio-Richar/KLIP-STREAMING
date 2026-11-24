@@ -18,6 +18,8 @@ const apiEnv = {
   // Las pruebas crean varias cuentas desde la misma IP: se sube el tope de tasa solo aquí.
   RATE_LIMIT_REGISTER_IP: "1000",
   RATE_LIMIT_LOGIN_IP: "1000",
+  // Bucket propio: las subidas de prueba no ensucian el de desarrollo.
+  S3_BUCKET: "klick-e2e",
   PUBLIC_WEB_URL: WEB_URL,
   PUBLIC_API_URL: WEB_URL, // las redirecciones de Google pasan por el proxy del web
 };

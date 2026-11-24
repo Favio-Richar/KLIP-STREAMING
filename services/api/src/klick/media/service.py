@@ -461,15 +461,22 @@ class MediaService:
         project_id: uuid.UUID | None = None,
         folder_id: uuid.UUID | None = None,
         source_type: str = "upload",
+        rights_confirmed: bool = False,
+        asset_id: uuid.UUID | None = None,
     ) -> MediaAsset:
         """Registra un asset ``uploading`` apuntando a un objeto reservado (lo usa la subida)."""
         if kind not in ASSET_KINDS:
             raise _invalid("invalid_asset_kind", f"Tipo no permitido: {kind}.")
         if source_type not in SOURCE_TYPES:
             raise _invalid("invalid_source_type", f"Origen no permitido: {source_type}.")
+        if source_type == "upload" and not rights_confirmed:
+            raise _invalid(
+                "rights_not_confirmed",
+                "Debes confirmar que tienes derecho a usar este contenido.",
+            )
         await self._storage.get(principal.org_id, storage_object_id)  # 404 si no es de la org
         asset = MediaAsset(
-            id=new_id(),
+            id=asset_id or new_id(),
             org_id=principal.org_id,
             project_id=project_id,
             folder_id=folder_id,
@@ -480,6 +487,8 @@ class MediaService:
             status="uploading",
             storage_object_id=storage_object_id,
             created_by=principal.user_id,
+            rights_confirmed_at=datetime.now(UTC) if rights_confirmed else None,
+            rights_confirmed_by=principal.user_id if rights_confirmed else None,
         )
         async with self._db.tenant_session(principal.org_id, principal.user_id) as s:
             await self._validate_placement(s, principal.org_id, project_id, folder_id)
@@ -680,6 +689,50 @@ class MediaService:
             await self._record(
                 s, principal, "asset.deleted", "asset", asset_id, event="asset.deleted"
             )
+
+    async def find_ready_asset_by_object(
+        self, org_id: uuid.UUID, storage_object_id: uuid.UUID
+    ) -> MediaAsset | None:
+        """Un asset ya procesado que usa ese objeto (para deduplicar subidas idénticas)."""
+        async with self._db.tenant_session(org_id) as s:
+            return (
+                await s.execute(
+                    select(MediaAsset)
+                    .where(
+                        MediaAsset.org_id == org_id,
+                        MediaAsset.storage_object_id == storage_object_id,
+                        MediaAsset.status == "ready",
+                        MediaAsset.deleted_at.is_(None),
+                    )
+                    .order_by(MediaAsset.id)
+                    .limit(1)
+                )
+            ).scalar_one_or_none()
+
+    async def count_open_uploads(self, org_id: uuid.UUID) -> int:
+        async with self._db.tenant_session(org_id) as s:
+            return int(
+                (
+                    await s.execute(
+                        select(func.count())
+                        .select_from(Upload)
+                        .where(Upload.org_id == org_id, Upload.status.in_(("open", "completing")))
+                    )
+                ).scalar_one()
+            )
+
+    async def discard_unfinished_asset(self, org_id: uuid.UUID, asset_id: uuid.UUID) -> bool:
+        """Borra de verdad un asset que nunca terminó de subirse (y su registro de subida).
+        Solo actúa sobre ``uploading``: un asset con contenido nunca se borra por aquí."""
+        async with self._db.tenant_session(org_id) as s:
+            result = await s.execute(
+                delete(MediaAsset).where(
+                    MediaAsset.id == asset_id,
+                    MediaAsset.org_id == org_id,
+                    MediaAsset.status == "uploading",
+                )
+            )
+            return bool(result.rowcount)  # type: ignore[attr-defined]
 
     async def download_url(
         self, org_id: uuid.UUID, asset_id: uuid.UUID, *, filename: str | None = None

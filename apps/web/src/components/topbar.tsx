@@ -24,7 +24,7 @@ import { mfaChallenge, useOrgStore } from "@/lib/stores";
 const NAV: ReadonlyArray<{ key: string; href: string | null }> = [
   { key: "panel", href: "/" },
   { key: "live", href: null },
-  { key: "library", href: null },
+  { key: "library", href: "/library" },
   { key: "clips", href: null },
   { key: "agent", href: null },
   { key: "publish", href: null },

@@ -29,8 +29,15 @@ from klick.identity.mfa import MfaService
 from klick.identity.oidc import OidcProvider, OidcService, build_oidc_provider
 from klick.identity.router import auth_router, me_router
 from klick.identity.service import IdentityService
-from klick.media.router import assets_router, folders_router, projects_router, tags_router
+from klick.media.router import (
+    assets_router,
+    folders_router,
+    projects_router,
+    tags_router,
+    uploads_router,
+)
 from klick.media.service import MediaService
+from klick.media.uploads import UploadService
 from klick.orgs.router import (
     invitations_router,
     members_router,
@@ -81,6 +88,9 @@ def create_app(
         app.state.storage = storage
         app.state.storage_service = StorageService(db, storage, settings)
         app.state.media_service = MediaService(db, app.state.storage_service)
+        app.state.upload_service = UploadService(
+            db, storage, app.state.storage_service, app.state.media_service, settings
+        )
         try:  # best-effort: si el almacén está caído, /readyz lo informa y la API arranca igual
             await storage.ensure_bucket()
         except Exception:
@@ -132,6 +142,7 @@ def create_app(
     api_router.include_router(projects_router)
     api_router.include_router(folders_router)
     api_router.include_router(tags_router)
+    api_router.include_router(uploads_router)
     api_router.include_router(assets_router)
     api_router.include_router(jobs_router)
     api_router.include_router(events_router)

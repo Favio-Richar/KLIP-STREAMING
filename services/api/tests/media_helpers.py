@@ -87,6 +87,7 @@ async def make_asset(
         original_filename=f"{title}.mp4",
         project_id=project_id,
         folder_id=folder_id,
+        rights_confirmed=True,
         **extra,
     )
     if status in ("processing", "ready", "failed"):

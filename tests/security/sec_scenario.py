@@ -39,6 +39,7 @@ class Tenant:
     folder_id: str = ""
     tag_id: str = ""
     asset_id: str = ""
+    upload_id: str = ""
     extra: dict[str, Any] = field(default_factory=dict)
 
     def actor(self, role: str) -> Actor:
@@ -101,6 +102,18 @@ async def build_tenant(api: ApiHarness, users: Users, tag: str) -> Tenant:
             folder_id=uuid.UUID(tenant.folder_id),
         )
     )
+    upload = await owner.call(
+        "POST",
+        "/assets/uploads",
+        org=org["id"],
+        json={
+            "filename": f"subida-{tag}.mp4",
+            "size_bytes": 1024,
+            "content_type": "video/mp4",
+            "rights_confirmed": True,
+        },
+    )
+    tenant.upload_id = upload.json()["upload"]["id"]
     return tenant
 
 
@@ -115,6 +128,7 @@ def media_path_values(t: "Tenant") -> dict[str, str]:
         "folder_id": t.folder_id,
         "tag_id": t.tag_id,
         "asset_id": t.asset_id,
+        "upload_id": t.upload_id,
     }
 
 
@@ -126,4 +140,11 @@ MEDIA_BODIES: dict[tuple[str, str], object] = {
     ("PATCH", "/folders/{folder_id}"): {"name": "pwn"},
     ("POST", "/tags"): {"name": "pwn"},
     ("PATCH", "/assets/{asset_id}"): {"title": "pwn"},
+    ("POST", "/assets/uploads"): {
+        "filename": "pwn.mp4",
+        "size_bytes": 1024,
+        "content_type": "video/mp4",
+        "rights_confirmed": True,
+    },
+    ("POST", "/assets/uploads/{upload_id}/parts"): {"part_numbers": [1]},
 }

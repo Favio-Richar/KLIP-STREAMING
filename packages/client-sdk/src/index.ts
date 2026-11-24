@@ -16,6 +16,8 @@ export class ApiProblem extends Error {
   readonly detail: string | undefined;
   readonly requestId: string | undefined;
   readonly fields: Record<string, string>;
+  /** Entradas crudas de `errors` (p. ej. `{missing_parts: [2]}` o `{permission: ...}`). */
+  readonly errors: Array<Record<string, unknown>>;
 
   constructor(status: number, body: unknown) {
     const b = (body && typeof body === "object" ? body : {}) as Record<string, unknown>;
@@ -26,7 +28,11 @@ export class ApiProblem extends Error {
     this.detail = typeof b.detail === "string" ? b.detail : undefined;
     this.requestId = typeof b.request_id === "string" ? b.request_id : undefined;
     this.fields = {};
+    this.errors = [];
     if (Array.isArray(b.errors)) {
+      this.errors = (b.errors as unknown[]).filter(
+        (e): e is Record<string, unknown> => !!e && typeof e === "object",
+      );
       for (const e of b.errors as Array<Record<string, unknown>>) {
         if (typeof e.field === "string" && e.field && typeof e.message === "string") {
           this.fields[e.field] ??= e.message;

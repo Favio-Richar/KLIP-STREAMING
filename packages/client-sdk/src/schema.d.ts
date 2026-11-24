@@ -21,6 +21,91 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/assets/uploads": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Start Upload */
+    post: operations["start_upload_api_v1_assets_uploads_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/assets/uploads/{upload_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Upload */
+    get: operations["get_upload_api_v1_assets_uploads__upload_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/assets/uploads/{upload_id}/abort": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Abort Upload */
+    post: operations["abort_upload_api_v1_assets_uploads__upload_id__abort_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/assets/uploads/{upload_id}/complete": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Complete Upload */
+    post: operations["complete_upload_api_v1_assets_uploads__upload_id__complete_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/assets/uploads/{upload_id}/parts": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Upload Part Urls */
+    post: operations["upload_part_urls_api_v1_assets_uploads__upload_id__parts_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/assets/{asset_id}": {
     parameters: {
       query?: never;
@@ -1133,6 +1218,20 @@ export interface components {
       name?: string | null;
       settings?: components["schemas"]["OrgSettingsIn"] | null;
     };
+    /** PartUrls */
+    PartUrls: {
+      /** Expires In */
+      expires_in: number;
+      /** Urls */
+      urls: {
+        [key: string]: string;
+      };
+    };
+    /** PartsRequest */
+    PartsRequest: {
+      /** Part Numbers */
+      part_numbers: number[];
+    };
     /** ProjectCreate */
     ProjectCreate: {
       /** Description */
@@ -1307,6 +1406,63 @@ export interface components {
       /** Scopes */
       scopes: string[];
     };
+    /** UploadInfo */
+    UploadInfo: {
+      /**
+       * Asset Id
+       * Format: uuid
+       */
+      asset_id: string;
+      /**
+       * Expires At
+       * Format: date-time
+       */
+      expires_at: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Part Size */
+      part_size: number;
+      /** Size Bytes */
+      size_bytes: number;
+      /** Status */
+      status: string;
+      /** Total Parts */
+      total_parts: number;
+      /** Uploaded Parts */
+      uploaded_parts: number[];
+    };
+    /** UploadStart */
+    UploadStart: {
+      /** Content Type */
+      content_type?: string | null;
+      /** Filename */
+      filename: string;
+      /** Folder Id */
+      folder_id?: string | null;
+      /** Project Id */
+      project_id?: string | null;
+      /**
+       * Rights Confirmed
+       * @description Confirmación explícita: 'tengo derecho a usar este contenido'.
+       */
+      rights_confirmed: boolean;
+      /** Sha256 */
+      sha256?: string | null;
+      /** Size Bytes */
+      size_bytes: number;
+      /** Title */
+      title?: string | null;
+    };
+    /** UploadStarted */
+    UploadStarted: {
+      asset: components["schemas"]["AssetOut"];
+      /** Deduplicated */
+      deduplicated: boolean;
+      upload: components["schemas"]["UploadInfo"] | null;
+    };
     /** UserOut */
     UserOut: {
       /**
@@ -1387,6 +1543,167 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["AssetPage"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  start_upload_api_v1_assets_uploads_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        "Idempotency-Key"?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UploadStart"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["UploadStarted"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_upload_api_v1_assets_uploads__upload_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        upload_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["UploadInfo"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  abort_upload_api_v1_assets_uploads__upload_id__abort_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        upload_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  complete_upload_api_v1_assets_uploads__upload_id__complete_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        upload_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AssetOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  upload_part_urls_api_v1_assets_uploads__upload_id__parts_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        upload_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PartsRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PartUrls"];
         };
       };
       /** @description Validation Error */

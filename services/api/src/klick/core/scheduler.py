@@ -18,6 +18,7 @@ from klick.core.idempotency import IdempotencyKey
 from klick.core.jobs import Dispatcher, Job, JobRef
 from klick.core.logging import configure_logging
 from klick.core.outbox import emit, publish_pending
+from klick.media.uploads import reap_expired_uploads
 from klick.storage.backend import S3Backend, StorageBackend
 from klick.storage.gc import collect_garbage
 
@@ -207,6 +208,11 @@ async def run_scheduler(
         tasks.append(
             asyncio.create_task(
                 _every("storage_gc", 3600, lambda: collect_garbage(db, storage, settings), stop)
+            )
+        )
+        tasks.append(
+            asyncio.create_task(
+                _every("upload_reaper", 600, lambda: reap_expired_uploads(db, storage), stop)
             )
         )
     log.info("scheduler_started")

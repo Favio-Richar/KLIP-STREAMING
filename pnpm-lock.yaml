@@ -187,6 +187,9 @@ importers:
       geist:
         specifier: 1.9.2
         version: 1.9.2(next@16.4.6(@babel/core@7.29.13(supports-color@10.2.2))(@playwright/test@1.65.1)(@types/node@24.10.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))
+      hash-wasm:
+        specifier: ^4.13.0
+        version: 4.13.0
       lucide-react:
         specifier: 1.78.0
         version: 1.78.0(@types/react@19.2.7)(react@19.3.1)
@@ -2058,6 +2061,9 @@ packages:
   has-flag@4.0.0:
     resolution: {integrity: sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==}
     engines: {node: '>=8'}
+
+  hash-wasm@4.13.0:
+    resolution: {integrity: sha512-GrWl7wsV46fKIXQZB5ebskLZLAmKL6d9RS0fspCxDeQyjoNu1AfTJTMLPOJyfzaQm0ldFiwFN21/w+sE/kgEFQ==}
 
   hermes-estree@0.25.1:
     resolution: {integrity: sha512-0wUoCcLp+5Ev5pDW2OriHC2MJCbwLwuRx+gAqMTOkGKJJiBCLjtrvy4PWUGn6MIVefecRpzoOZ/UV6iGdOr+Cw==}
@@ -4578,6 +4584,8 @@ snapshots:
   graceful-fs@4.2.12: {}
 
   has-flag@4.0.0: {}
+
+  hash-wasm@4.13.0: {}
 
   hermes-estree@0.25.1: {}
 

@@ -327,7 +327,18 @@
     "job_finished": "That job already finished.",
     "unknown_job_kind": "That job type doesn't exist.",
     "oidc_failed": "We couldn't complete sign-in with Google.",
-    "internal_error": "The server had a problem. Try again in a few minutes."
+    "internal_error": "The server had a problem. Try again in a few minutes.",
+    "rights_not_confirmed": "Confirm that you have the right to use this content.",
+    "upload_too_large": "The file exceeds the maximum allowed size (20 GB).",
+    "unsupported_media_type": "That format is not allowed. Upload a common video, audio or image file.",
+    "too_many_uploads": "Too many uploads are in progress. Wait for one to finish.",
+    "upload_size_mismatch": "The file arrived incomplete. Upload it again.",
+    "upload_incomplete": "Some parts of the file are missing. Retry the upload.",
+    "upload_expired": "The upload expired. Start a new one.",
+    "upload_not_open": "This upload is no longer available. Start a new one.",
+    "invalid_size": "The file is empty.",
+    "invalid_filename": "The file name is not valid.",
+    "part_failed": "A part of the file could not be sent. Retry."
   },
   "pages": {
     "notFoundTitle": "We couldn't find this page",
@@ -336,5 +347,63 @@
     "errorTitle": "Something went wrong",
     "errorBody": "We had a problem showing this screen. You can try again or go back home.",
     "retry": "Try again"
+  },
+  "library": {
+    "title": "Library",
+    "subtitle": "Your videos, audio and images. Upload a file to get started.",
+    "upload": {
+      "title": "Upload files",
+      "hint": "Drag files here or choose them from your computer. They are sent in parts: you can pause and resume.",
+      "choose": "Choose files",
+      "dropping": "Drop the files to upload them",
+      "rights": "I confirm that I have the right to use this content.",
+      "rightsHelp": "Only upload your own or authorized material. We record this confirmation with your user and the date.",
+      "needRights": "Tick the rights confirmation to be able to upload files.",
+      "readOnly": "Your role can view the library but not upload files.",
+      "queue": "Uploads",
+      "pause": "Pause",
+      "resume": "Resume",
+      "cancel": "Cancel",
+      "retry": "Retry",
+      "dismiss": "Remove from list",
+      "clearFinished": "Clear finished",
+      "parts": "{done} of {total} parts",
+      "progress": "Progress of {name}",
+      "status": {
+        "queued": "Queued",
+        "hashing": "Checking file",
+        "starting": "Preparing",
+        "uploading": "Uploading",
+        "paused": "Paused",
+        "completing": "Finishing",
+        "done": "Uploaded",
+        "dedup": "Already in your library",
+        "error": "Failed",
+        "canceled": "Canceled"
+      }
+    },
+    "list": {
+      "title": "Files",
+      "emptyTitle": "No files yet",
+      "emptyBody": "Upload your first video to see it here.",
+      "loadFailed": "We couldn't load the library",
+      "retry": "Retry",
+      "name": "Name",
+      "kind": "Type",
+      "status": "Status",
+      "duration": "Duration",
+      "added": "Added"
+    },
+    "kind": {
+      "video": "Video",
+      "audio": "Audio",
+      "image": "Image"
+    },
+    "status": {
+      "uploading": "Uploading",
+      "processing": "Processing",
+      "ready": "Ready",
+      "failed": "Failed"
+    }
   }
 }

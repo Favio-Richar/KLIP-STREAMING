@@ -31,7 +31,7 @@ Formato: `MÉTODO ruta` — permiso requerido. Todas las rutas aplican RLS y `se
 
 **Proyectos y biblioteca (`media`)**
 `GET/POST /projects`, `GET/PATCH/DELETE /projects/{id}`; `GET/POST /folders`, `PATCH/DELETE /folders/{id}`; `GET/POST /tags`, `DELETE /tags/{id}`;
-`POST /assets/uploads` → URLs firmadas; `POST /assets/uploads/{id}/complete|abort`;
+`POST /assets/uploads` (crea asset + subida multipart; exige `rights_confirmed: true`; acepta `Idempotency-Key`; si el `sha256` declarado coincide con un contenido ya verificado en la organización responde `deduplicated: true` sin subir nada), `GET /assets/uploads/{id}` (estado y partes ya subidas, para reanudar), `POST /assets/uploads/{id}/parts` (URLs firmadas por lote), `POST /assets/uploads/{id}/complete|abort`;
 `GET /assets` (filtros: proyecto, tipo, estado, texto, etiquetas), `GET/PATCH/DELETE /assets/{id}`, `GET /assets/{id}/download-url`, `GET /assets/{id}/derivatives` — `media:read|write`.
 
 **Transcripciones (`transcripts`)**

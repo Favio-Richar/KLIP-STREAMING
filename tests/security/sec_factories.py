@@ -125,8 +125,8 @@ async def _object(conn: asyncpg.Connection, org_id: uuid.UUID) -> uuid.UUID:
 
 async def _asset(conn: asyncpg.Connection, org_id: uuid.UUID) -> uuid.UUID:
     new_id: uuid.UUID = await conn.fetchval(
-        "insert into media_assets (id, org_id, kind, title, storage_object_id) "
-        "values (gen_random_uuid(), $1, 'video', 'v', $2) returning id",
+        "insert into media_assets (id, org_id, kind, title, storage_object_id, rights_confirmed_at) "
+        "values (gen_random_uuid(), $1, 'video', 'v', $2, now()) returning id",
         org_id,
         await _object(conn, org_id),
     )
@@ -168,8 +168,8 @@ async def _media_derivatives(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: C
 async def _uploads(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: Ctx) -> None:
     obj = await _object(conn, org_id)
     asset = await conn.fetchval(
-        "insert into media_assets (id, org_id, kind, title, storage_object_id) "
-        "values (gen_random_uuid(), $1, 'video', 'v', $2) returning id",
+        "insert into media_assets (id, org_id, kind, title, storage_object_id, rights_confirmed_at) "
+        "values (gen_random_uuid(), $1, 'video', 'v', $2, now()) returning id",
         org_id,
         obj,
     )

@@ -45,6 +45,11 @@ class Settings(BaseSettings):
     storage_orphan_grace_h: int = 24  # ADR-005: gracia antes de borrar un objeto sin referencias
     storage_upload_stale_h: int = 24  # subidas sin completar se consideran abandonadas
 
+    # Subidas (F1-02). Docs/07: 20 GB por archivo por defecto; partes de al menos 8 MiB.
+    upload_max_bytes: int = 20 * 1024**3
+    upload_part_min_bytes: int = 8 * 1024**2
+    upload_urls_per_request: int = 100
+
     job_heartbeat_interval_s: float = 10
     job_heartbeat_timeout_s: float = 60  # sin latido durante este tiempo = worker perdido
     job_backoff_base_s: float = 5  # reintento n espera base * 2**(n-1), máx. 15 min

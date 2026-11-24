@@ -89,6 +89,8 @@ class MediaAsset(IdMixin, TimestampMixin, Base):
     error: Mapped[dict[str, Any] | None] = mapped_column(JSONB(none_as_null=True))
     live_session_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     created_by: Mapped[uuid.UUID | None] = _user_fk()
+    rights_confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    rights_confirmed_by: Mapped[uuid.UUID | None] = _user_fk()
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     tsv: Mapped[Any] = mapped_column(
         TSVECTOR,

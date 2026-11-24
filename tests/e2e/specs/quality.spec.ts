@@ -11,7 +11,7 @@ const THEMES = ["dark", "light"] as const;
 const WIDTHS = [375, 1024, 1440] as const;
 
 const PUBLIC = ["/login", "/register", "/forgot-password"] as const;
-const PRIVATE = ["/", "/settings/members", "/settings/profile", "/orgs/new"] as const;
+const PRIVATE = ["/", "/library", "/settings/members", "/settings/profile", "/orgs/new"] as const;
 
 async function setTheme(page: Page, theme: (typeof THEMES)[number]) {
   await page.evaluate((t) => {

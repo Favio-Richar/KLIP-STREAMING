@@ -1,4 +1,5 @@
 import uuid
+from datetime import UTC, datetime
 from typing import Any
 
 import asyncpg
@@ -429,7 +430,11 @@ async def test_storage_ref_counting_is_maintained_by_triggers(
     obj = await make_object(api, org, ana.user_id)
     assert await state(obj) == (0, "ready")
     asset = await media(api).create_asset(
-        principal(org, ana.user_id), kind="video", title="V", storage_object_id=obj
+        principal(org, ana.user_id),
+        kind="video",
+        title="V",
+        storage_object_id=obj,
+        rights_confirmed=True,
     )
     assert await state(obj) == (1, "ready")
 
@@ -468,12 +473,15 @@ async def test_database_constraints_hold_without_the_service_layer(
             "title": "t",
             "status": "uploading",
             "storage_object_id": obj,
+            "rights_confirmed_at": datetime.now(UTC),
             **over,
         }
         names = ", ".join(cols)
         marks = ", ".join(f"${i + 1}" for i in range(len(cols)))
         await sql(api, f"insert into media_assets ({names}) values ({marks})", *cols.values())
 
+    with pytest.raises(asyncpg.CheckViolationError):  # subido sin confirmar derechos
+        await insert_asset(rights_confirmed_at=None)
     with pytest.raises(asyncpg.CheckViolationError):  # listo sin duración
         await insert_asset(status="ready")
     with pytest.raises(asyncpg.CheckViolationError):
@@ -507,6 +515,32 @@ async def test_database_constraints_hold_without_the_service_layer(
         )
 
 
+async def test_assets_require_rights_confirmation(api: ApiHarness, users: Users) -> None:
+    ana, org = await _setup(api, users)
+    obj = await make_object(api, org, ana.user_id, ready=False)
+    with pytest.raises(ApiError) as exc:
+        await media(api).create_asset(
+            principal(org, ana.user_id), kind="video", title="x", storage_object_id=obj
+        )
+    assert exc.value.status == 422 and exc.value.code == "rights_not_confirmed"
+    asset = await media(api).create_asset(
+        principal(org, ana.user_id),
+        kind="video",
+        title="x",
+        storage_object_id=obj,
+        rights_confirmed=True,
+    )
+    row = (
+        await sql(
+            api,
+            "select rights_confirmed_at, rights_confirmed_by from media_assets where id = $1",
+            asset.id,
+        )
+    )[0]
+    assert row["rights_confirmed_at"] is not None
+    assert str(row["rights_confirmed_by"]) == ana.user_id  # queda registrado quién y cuándo
+
+
 # ----------------------------------------------------------------------------- subidas
 
 
@@ -517,7 +551,9 @@ async def test_upload_lifecycle(api: ApiHarness, users: Users) -> None:
     org_id, svc = uuid.UUID(org), media(api)
     p = principal(org, ana.user_id)
     obj = await make_object(api, org, ana.user_id, ready=False)
-    asset = await svc.create_asset(p, kind="video", title="Grande", storage_object_id=obj)
+    asset = await svc.create_asset(
+        p, kind="video", title="Grande", storage_object_id=obj, rights_confirmed=True
+    )
     up = await svc.create_upload(
         p,
         asset_id=asset.id,
@@ -588,7 +624,11 @@ async def test_other_organizations_cannot_see_or_use_media(api: ApiHarness, user
     foreign_obj = await make_object(api, org_a, ana.user_id)
     with pytest.raises(ApiError) as exc:
         await media(api).create_asset(
-            principal(org_b, bob.user_id), kind="video", title="x", storage_object_id=foreign_obj
+            principal(org_b, bob.user_id),
+            kind="video",
+            title="x",
+            storage_object_id=foreign_obj,
+            rights_confirmed=True,
         )
     assert exc.value.status == 404
     # el asset de ana sigue intacto

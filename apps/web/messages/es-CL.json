@@ -327,7 +327,18 @@
     "job_finished": "Ese trabajo ya terminó.",
     "unknown_job_kind": "Ese tipo de trabajo no existe.",
     "oidc_failed": "No pudimos completar el acceso con Google.",
-    "internal_error": "El servidor tuvo un problema. Inténtalo en unos minutos."
+    "internal_error": "El servidor tuvo un problema. Inténtalo en unos minutos.",
+    "rights_not_confirmed": "Confirma que tienes derecho a usar este contenido.",
+    "upload_too_large": "El archivo supera el tamaño máximo permitido (20 GB).",
+    "unsupported_media_type": "Ese formato no está permitido. Sube un video, audio o imagen común.",
+    "too_many_uploads": "Hay demasiadas subidas en curso. Espera a que termine alguna.",
+    "upload_size_mismatch": "El archivo llegó incompleto. Vuelve a subirlo.",
+    "upload_incomplete": "Faltaron partes del archivo. Reintenta la subida.",
+    "upload_expired": "La subida expiró. Empieza otra.",
+    "upload_not_open": "Esta subida ya no está disponible. Empieza otra.",
+    "invalid_size": "El archivo está vacío.",
+    "invalid_filename": "El nombre del archivo no es válido.",
+    "part_failed": "No se pudo enviar una parte del archivo. Reintenta."
   },
   "pages": {
     "notFoundTitle": "No encontramos esta página",
@@ -336,5 +347,63 @@
     "errorTitle": "Algo salió mal",
     "errorBody": "Tuvimos un problema al mostrar esta pantalla. Puedes reintentar o volver al inicio.",
     "retry": "Reintentar"
+  },
+  "library": {
+    "title": "Biblioteca",
+    "subtitle": "Tus videos, audios e imágenes. Sube un archivo para empezar.",
+    "upload": {
+      "title": "Subir archivos",
+      "hint": "Arrastra archivos aquí o elígelos desde tu equipo. Se envían por partes: puedes pausar y reanudar.",
+      "choose": "Elegir archivos",
+      "dropping": "Suelta los archivos para subirlos",
+      "rights": "Confirmo que tengo derecho a usar este contenido.",
+      "rightsHelp": "Sube solo material propio o con autorización. Guardamos esta confirmación con tu usuario y la fecha.",
+      "needRights": "Marca la confirmación de derechos para poder subir archivos.",
+      "readOnly": "Tu rol puede ver la biblioteca, pero no subir archivos.",
+      "queue": "Subidas",
+      "pause": "Pausar",
+      "resume": "Reanudar",
+      "cancel": "Cancelar",
+      "retry": "Reintentar",
+      "dismiss": "Quitar de la lista",
+      "clearFinished": "Limpiar terminadas",
+      "parts": "{done} de {total} partes",
+      "progress": "Progreso de {name}",
+      "status": {
+        "queued": "En espera",
+        "hashing": "Verificando archivo",
+        "starting": "Preparando",
+        "uploading": "Subiendo",
+        "paused": "En pausa",
+        "completing": "Finalizando",
+        "done": "Subido",
+        "dedup": "Ya estaba en tu biblioteca",
+        "error": "Con error",
+        "canceled": "Cancelado"
+      }
+    },
+    "list": {
+      "title": "Archivos",
+      "emptyTitle": "Todavía no hay archivos",
+      "emptyBody": "Sube tu primer video para verlo aquí.",
+      "loadFailed": "No pudimos cargar la biblioteca",
+      "retry": "Reintentar",
+      "name": "Nombre",
+      "kind": "Tipo",
+      "status": "Estado",
+      "duration": "Duración",
+      "added": "Agregado"
+    },
+    "kind": {
+      "video": "Video",
+      "audio": "Audio",
+      "image": "Imagen"
+    },
+    "status": {
+      "uploading": "Subiendo",
+      "processing": "Procesando",
+      "ready": "Listo",
+      "failed": "Con error"
+    }
   }
 }
