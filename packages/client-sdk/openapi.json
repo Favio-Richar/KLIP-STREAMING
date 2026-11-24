@@ -169,6 +169,17 @@
             "title": "Tags",
             "type": "array"
           },
+          "thumbnail_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail Url"
+          },
           "title": {
             "title": "Title",
             "type": "string"
@@ -2582,6 +2593,65 @@
           }
         },
         "summary": "List Derivatives",
+        "tags": [
+          "media"
+        ]
+      }
+    },
+    "/api/v1/assets/{asset_id}/derivatives/{kind}/download-url": {
+      "get": {
+        "operationId": "derivative_download_url_api_v1_assets__asset_id__derivatives__kind__download_url_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Asset Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "enum": [
+                "proxy_720p",
+                "thumbnail",
+                "sprite",
+                "waveform",
+                "audio_16k"
+              ],
+              "title": "Kind",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DownloadUrl"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Derivative Download Url",
         "tags": [
           "media"
         ]

@@ -901,6 +901,44 @@ class MediaService:
             await s.flush()
             return row
 
+    async def derivative_url(self, org_id: uuid.UUID, asset_id: uuid.UUID, kind: str) -> str:
+        """URL firmada de un derivado (p. ej. el proxy para el reproductor)."""
+        if kind not in DERIVATIVE_KINDS:
+            raise _invalid("invalid_derivative_kind", f"Derivado desconocido: {kind}.")
+        async with self._db.tenant_session(org_id) as s:
+            await self._asset(s, org_id, asset_id)
+            object_id = (
+                await s.execute(
+                    select(MediaDerivative.storage_object_id).where(
+                        MediaDerivative.org_id == org_id,
+                        MediaDerivative.asset_id == asset_id,
+                        MediaDerivative.kind == kind,
+                    )
+                )
+            ).scalar_one_or_none()
+        if object_id is None:
+            raise _not_found("Derivative")
+        return await self._storage.presign_download(org_id, object_id)
+
+    async def thumbnail_urls(
+        self, org_id: uuid.UUID, asset_ids: list[uuid.UUID]
+    ) -> dict[uuid.UUID, str]:
+        """Miniatura firmada de cada asset que ya la tiene (los demás no aparecen)."""
+        if not asset_ids:
+            return {}
+        async with self._db.tenant_session(org_id) as s:
+            rows = (
+                await s.execute(
+                    select(MediaDerivative.asset_id, MediaDerivative.storage_object_id).where(
+                        MediaDerivative.org_id == org_id,
+                        MediaDerivative.kind == "thumbnail",
+                        MediaDerivative.asset_id.in_(asset_ids),
+                    )
+                )
+            ).all()
+        urls = await self._storage.presign_downloads(org_id, [obj for _, obj in rows])
+        return {asset: urls[obj] for asset, obj in rows if obj in urls}
+
     async def list_derivatives(
         self, org_id: uuid.UUID, asset_id: uuid.UUID
     ) -> list[MediaDerivative]:

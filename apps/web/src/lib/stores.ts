@@ -13,6 +13,18 @@ export const useOrgStore = create<OrgState>()(
   persist((set) => ({ orgId: null, setOrgId: (orgId) => set({ orgId }) }), { name: "klick.org" }),
 );
 
+/** Vista de la biblioteca (cuadrícula o lista): preferencia de interfaz, se recuerda en el equipo. */
+interface LibraryViewState {
+  view: "grid" | "list";
+  setView: (v: "grid" | "list") => void;
+}
+
+export const useLibraryView = create<LibraryViewState>()(
+  persist((set) => ({ view: "grid", setView: (view) => set({ view }) }), {
+    name: "klick.library.view",
+  }),
+);
+
 export type ThemePreference = "system" | "dark" | "light";
 
 interface ThemeState {

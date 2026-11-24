@@ -392,7 +392,10 @@
       "kind": "Type",
       "status": "Status",
       "duration": "Duration",
-      "added": "Added"
+      "added": "Added",
+      "noResultsTitle": "No results",
+      "noResultsBody": "No file matches your search. Try different filters.",
+      "loadMore": "Load more"
     },
     "kind": {
       "video": "Video",
@@ -404,6 +407,70 @@
       "processing": "Processing",
       "ready": "Ready",
       "failed": "Failed"
+    },
+    "view": {
+      "label": "View",
+      "grid": "Grid",
+      "list": "List"
+    },
+    "filters": {
+      "label": "Search and filter files",
+      "search": "Search",
+      "searchPlaceholder": "Search by name…",
+      "kind": "Type",
+      "status": "Status",
+      "tag": "Tag",
+      "allKinds": "All types",
+      "allStatuses": "All statuses",
+      "allTags": "All tags",
+      "clear": "Clear filters"
+    },
+    "detail": {
+      "title": "File details",
+      "back": "Back to the library",
+      "info": "Information",
+      "kind": "Type",
+      "duration": "Duration",
+      "resolution": "Resolution",
+      "fps": "Frames per second",
+      "codecs": "Codecs",
+      "container": "Container",
+      "bitrate": "Bitrate",
+      "added": "Added",
+      "notFoundTitle": "We couldn't find this file",
+      "notFoundBody": "It may have been deleted or may not belong to this organization.",
+      "loadFailed": "We couldn't load the file",
+      "rename": "Rename",
+      "titleField": "File name",
+      "save": "Save",
+      "cancel": "Cancel",
+      "close": "Close",
+      "download": "Download original",
+      "reprocess": "Analyze again",
+      "reprocessStarted": "We are analyzing the file again.",
+      "delete": "Delete",
+      "deleted": "File deleted.",
+      "deleteTitle": "Delete “{name}”?",
+      "deleteBody": "It will stop appearing in your library. This cannot be undone from the app.",
+      "processing": "We are preparing the file (analyzing it and generating the preview). This can take a few minutes; the page updates by itself.",
+      "tags": "Tags",
+      "noTags": "There are no tags yet. Create the first one below.",
+      "newTag": "New tag",
+      "addTag": "Add",
+      "errors": {
+        "invalid_media": "The file content is not valid or does not match its format.",
+        "unsupported_media_type": "That format is not allowed.",
+        "no_video_stream": "The file contains no video.",
+        "no_audio_stream": "The file contains no audio.",
+        "too_long": "The file is longer than the maximum allowed (4 hours).",
+        "too_large_dimensions": "The file resolution exceeds the maximum allowed.",
+        "too_many_streams": "The file has too many tracks.",
+        "unknown_duration": "We couldn't determine the file duration.",
+        "invalid_frame_rate": "The video frame rate is not valid.",
+        "probe_timeout": "The analysis took too long. Try again.",
+        "processing_failed": "We couldn't process the file. You can try again.",
+        "unknown": "We couldn't process the file."
+      }
     }
   }
 }

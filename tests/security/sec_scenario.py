@@ -129,6 +129,7 @@ def media_path_values(t: "Tenant") -> dict[str, str]:
         "tag_id": t.tag_id,
         "asset_id": t.asset_id,
         "upload_id": t.upload_id,
+        "kind": "thumbnail",  # parámetro de ruta de derivados
     }
 
 

@@ -158,11 +158,12 @@ class AssetOut(BaseModel):
     has_audio: bool | None
     error: dict[str, Any] | None
     tags: list[TagOut]
+    thumbnail_url: str | None = None
     created_at: datetime
     updated_at: datetime | None
 
     @classmethod
-    def of(cls, view: AssetView) -> "AssetOut":
+    def of(cls, view: AssetView, thumbnail_url: str | None = None) -> "AssetOut":
         a = view.asset
         return cls(
             id=a.id,
@@ -184,6 +185,7 @@ class AssetOut(BaseModel):
             has_audio=a.has_audio,
             error=a.error,
             tags=[TagOut.model_validate(t) for t in view.tags],
+            thumbnail_url=thumbnail_url,
             created_at=a.created_at,
             updated_at=a.updated_at,
         )
@@ -386,13 +388,18 @@ async def list_assets(
         q=q,
         tag_ids=tag_id,
     )
-    return AssetPage(items=[AssetOut.of(v) for v in page.items], next_cursor=page.next_cursor)
+    thumbs = await media.thumbnail_urls(principal.org_id, [v.asset.id for v in page.items])
+    return AssetPage(
+        items=[AssetOut.of(v, thumbs.get(v.asset.id)) for v in page.items],
+        next_cursor=page.next_cursor,
+    )
 
 
 @assets_router.get("/{asset_id}", response_model=AssetOut)
 async def get_asset(asset_id: uuid.UUID, principal: CurrentPrincipal, media: Media) -> AssetOut:
     principal.require(READ)
-    return AssetOut.of(await media.get_asset(principal.org_id, asset_id))
+    thumbs = await media.thumbnail_urls(principal.org_id, [asset_id])
+    return AssetOut.of(await media.get_asset(principal.org_id, asset_id), thumbs.get(asset_id))
 
 
 @assets_router.patch("/{asset_id}", response_model=AssetOut)
@@ -434,6 +441,19 @@ async def reprocess_asset(
 async def list_derivatives(asset_id: uuid.UUID, principal: CurrentPrincipal, media: Media) -> Any:
     principal.require(READ)
     return await media.list_derivatives(principal.org_id, asset_id)
+
+
+@assets_router.get("/{asset_id}/derivatives/{kind}/download-url", response_model=DownloadUrl)
+async def derivative_download_url(
+    asset_id: uuid.UUID,
+    kind: Literal["proxy_720p", "thumbnail", "sprite", "waveform", "audio_16k"],
+    request: Request,
+    principal: CurrentPrincipal,
+    media: Media,
+) -> DownloadUrl:
+    principal.require(READ)
+    url = await media.derivative_url(principal.org_id, asset_id, kind)
+    return DownloadUrl(url=url, expires_in=request.app.state.settings.storage_url_ttl_s)
 
 
 @assets_router.get("/{asset_id}/download-url", response_model=DownloadUrl)

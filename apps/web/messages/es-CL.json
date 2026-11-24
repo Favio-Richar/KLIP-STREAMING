@@ -392,7 +392,10 @@
       "kind": "Tipo",
       "status": "Estado",
       "duration": "Duración",
-      "added": "Agregado"
+      "added": "Agregado",
+      "noResultsTitle": "Sin resultados",
+      "noResultsBody": "Ningún archivo coincide con tu búsqueda. Prueba con otros filtros.",
+      "loadMore": "Cargar más"
     },
     "kind": {
       "video": "Video",
@@ -404,6 +407,70 @@
       "processing": "Procesando",
       "ready": "Listo",
       "failed": "Con error"
+    },
+    "view": {
+      "label": "Vista",
+      "grid": "Cuadrícula",
+      "list": "Lista"
+    },
+    "filters": {
+      "label": "Buscar y filtrar archivos",
+      "search": "Buscar",
+      "searchPlaceholder": "Buscar por nombre…",
+      "kind": "Tipo",
+      "status": "Estado",
+      "tag": "Etiqueta",
+      "allKinds": "Todos los tipos",
+      "allStatuses": "Todos los estados",
+      "allTags": "Todas las etiquetas",
+      "clear": "Limpiar filtros"
+    },
+    "detail": {
+      "title": "Detalle del archivo",
+      "back": "Volver a la biblioteca",
+      "info": "Información",
+      "kind": "Tipo",
+      "duration": "Duración",
+      "resolution": "Resolución",
+      "fps": "Cuadros por segundo",
+      "codecs": "Códecs",
+      "container": "Contenedor",
+      "bitrate": "Tasa de bits",
+      "added": "Agregado",
+      "notFoundTitle": "No encontramos este archivo",
+      "notFoundBody": "Puede que se haya eliminado o que no pertenezca a esta organización.",
+      "loadFailed": "No pudimos cargar el archivo",
+      "rename": "Renombrar",
+      "titleField": "Nombre del archivo",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "close": "Cerrar",
+      "download": "Descargar original",
+      "reprocess": "Volver a analizar",
+      "reprocessStarted": "Estamos analizando el archivo de nuevo.",
+      "delete": "Eliminar",
+      "deleted": "Archivo eliminado.",
+      "deleteTitle": "¿Eliminar «{name}»?",
+      "deleteBody": "Dejará de aparecer en tu biblioteca. Esta acción no se puede deshacer desde la aplicación.",
+      "processing": "Estamos preparando el archivo (analizando y generando la vista previa). Esto puede tardar unos minutos; la página se actualiza sola.",
+      "tags": "Etiquetas",
+      "noTags": "Aún no hay etiquetas. Crea la primera abajo.",
+      "newTag": "Nueva etiqueta",
+      "addTag": "Agregar",
+      "errors": {
+        "invalid_media": "El contenido del archivo no es válido o no coincide con su formato.",
+        "unsupported_media_type": "Ese formato no está permitido.",
+        "no_video_stream": "El archivo no contiene video.",
+        "no_audio_stream": "El archivo no contiene audio.",
+        "too_long": "El archivo dura más del máximo permitido (4 horas).",
+        "too_large_dimensions": "La resolución del archivo supera el máximo permitido.",
+        "too_many_streams": "El archivo tiene demasiadas pistas.",
+        "unknown_duration": "No pudimos determinar la duración del archivo.",
+        "invalid_frame_rate": "La velocidad de cuadros del video no es válida.",
+        "probe_timeout": "El análisis tardó demasiado. Inténtalo de nuevo.",
+        "processing_failed": "No pudimos procesar el archivo. Puedes volver a intentarlo.",
+        "unknown": "No pudimos procesar el archivo."
+      }
     }
   }
 }

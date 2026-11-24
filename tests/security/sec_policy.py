@@ -94,6 +94,9 @@ POLICY: dict[tuple[str, str], Policy] = {
     ("POST", _p("/assets/{asset_id}/reprocess")): Policy("org_header", "media:write"),
     ("GET", _p("/assets/{asset_id}/derivatives")): Policy("org_header", "media:read"),
     ("GET", _p("/assets/{asset_id}/download-url")): Policy("org_header", "media:read"),
+    ("GET", _p("/assets/{asset_id}/derivatives/{kind}/download-url")): Policy(
+        "org_header", "media:read"
+    ),
     ("GET", _p("/events/stream")): Policy("org_header", streaming=True),
     # --- organización por ruta --------------------------------------------------------------
     ("GET", _p("/orgs/{org_id}")): Policy("org_path"),

@@ -237,6 +237,30 @@ class StorageService:
             obj.key, expires_s=self._s.storage_url_ttl_s, content_type=obj.mime
         )
 
+    async def presign_downloads(
+        self, org_id: uuid.UUID, object_ids: list[uuid.UUID]
+    ) -> dict[uuid.UUID, str]:
+        """URLs de descarga para varios objetos ``ready`` en una sola consulta. Los que no
+        existen, son de otra organización o no están listos se omiten (nunca lanza)."""
+        if not object_ids:
+            return {}
+        async with self._db.tenant_session(org_id) as s:
+            rows = (
+                await s.execute(
+                    select(StorageObject).where(
+                        StorageObject.org_id == org_id,
+                        StorageObject.id.in_(object_ids),
+                        StorageObject.status == "ready",
+                    )
+                )
+            ).scalars()
+            return {
+                o.id: self._backend.presign_get(
+                    o.key, expires_s=self._s.storage_url_ttl_s, filename=None, content_type=None
+                )
+                for o in rows
+            }
+
     async def presign_download(
         self, org_id: uuid.UUID, object_id: uuid.UUID, *, filename: str | None = None
     ) -> str:

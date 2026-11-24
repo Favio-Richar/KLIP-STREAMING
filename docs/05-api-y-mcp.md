@@ -32,7 +32,7 @@ Formato: `MÉTODO ruta` — permiso requerido. Todas las rutas aplican RLS y `se
 **Proyectos y biblioteca (`media`)**
 `GET/POST /projects`, `GET/PATCH/DELETE /projects/{id}`; `GET/POST /folders`, `PATCH/DELETE /folders/{id}`; `GET/POST /tags`, `DELETE /tags/{id}`;
 `POST /assets/uploads` (crea asset + subida multipart; exige `rights_confirmed: true`; acepta `Idempotency-Key`; si el `sha256` declarado coincide con un contenido ya verificado en la organización responde `deduplicated: true` sin subir nada), `GET /assets/uploads/{id}` (estado y partes ya subidas, para reanudar), `POST /assets/uploads/{id}/parts` (URLs firmadas por lote), `POST /assets/uploads/{id}/complete|abort`;
-`GET /assets` (filtros: proyecto, tipo, estado, texto, etiquetas), `GET/PATCH/DELETE /assets/{id}`, `GET /assets/{id}/download-url`, `GET /assets/{id}/derivatives` — `media:read|write`.
+`GET /assets` (filtros: proyecto, tipo, estado, texto, etiquetas; cada ítem trae `thumbnail_url` firmada si ya existe), `GET/PATCH/DELETE /assets/{id}`, `POST /assets/{id}/reprocess` (vuelve a analizar un asset `failed` o `ready`), `GET /assets/{id}/download-url`, `GET /assets/{id}/derivatives`, `GET /assets/{id}/derivatives/{kind}/download-url` — `media:read|write`.
 
 **Transcripciones (`transcripts`)**
 `POST /assets/{id}/transcribe` (job), `GET /assets/{id}/transcripts`, `GET /transcripts/{id}/segments`, `GET /transcripts/search?q=&asset_id=` (híbrido FTS + vectorial) — `ai:run`, `media:read`.

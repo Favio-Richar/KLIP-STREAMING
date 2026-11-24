@@ -142,6 +142,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/assets/{asset_id}/derivatives/{kind}/download-url": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Derivative Download Url */
+    get: operations["derivative_download_url_api_v1_assets__asset_id__derivatives__kind__download_url_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/assets/{asset_id}/download-url": {
     parameters: {
       query?: never;
@@ -876,6 +893,8 @@ export interface components {
       status: string;
       /** Tags */
       tags: components["schemas"]["TagOut"][];
+      /** Thumbnail Url */
+      thumbnail_url?: string | null;
       /** Title */
       title: string;
       /** Updated At */
@@ -1850,6 +1869,38 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["DerivativeOut"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  derivative_download_url_api_v1_assets__asset_id__derivatives__kind__download_url_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        asset_id: string;
+        kind: "proxy_720p" | "thumbnail" | "sprite" | "waveform" | "audio_16k";
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DownloadUrl"];
         };
       };
       /** @description Validation Error */

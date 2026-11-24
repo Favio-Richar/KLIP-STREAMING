@@ -333,6 +333,59 @@ async def test_download_url_and_derivatives(api: ApiHarness, users: Users) -> No
     assert exc.value.code == "invalid_derivative_kind"
 
 
+async def test_thumbnail_urls_in_listings_and_derivative_download_urls(
+    api: ApiHarness, users: Users
+) -> None:
+    import httpx  # noqa: PLC0415
+
+    ana, org = await _setup(api, users)
+    org_id = uuid.UUID(org)
+    with_thumb = await make_asset(api, org, ana.user_id, title="Con miniatura", status="ready")
+    without = await make_asset(api, org, ana.user_id, title="Sin miniatura", status="ready")
+    thumb_obj = await make_object(api, org, ana.user_id, data=b"jpeg-bytes")
+    proxy_obj = await make_object(api, org, ana.user_id, data=b"proxy-bytes")
+    await media(api).upsert_derivative(org_id, with_thumb, "thumbnail", thumb_obj)
+    await media(api).upsert_derivative(org_id, with_thumb, "proxy_720p", proxy_obj)
+
+    listing = {a["id"]: a for a in (await ana.call("GET", "/assets", org=org)).json()["items"]}
+    assert listing[str(with_thumb)]["thumbnail_url"].startswith("http")
+    assert listing[str(without)]["thumbnail_url"] is None
+    detail = (await ana.call("GET", f"/assets/{with_thumb}", org=org)).json()
+    assert detail["thumbnail_url"] is not None
+
+    r = await ana.call("GET", f"/assets/{with_thumb}/derivatives/proxy_720p/download-url", org=org)
+    assert r.status_code == 200 and r.json()["expires_in"] == api.settings.storage_url_ttl_s
+    async with httpx.AsyncClient() as http:
+        assert (
+            await http.get(r.json()["url"])
+        ).content == b"proxy-bytes"  # la URL funciona de verdad
+
+    missing = await ana.call(
+        "GET", f"/assets/{with_thumb}/derivatives/sprite/download-url", org=org
+    )
+    assert missing.status_code == 404  # ese derivado aún no existe
+    bad = await ana.call("GET", f"/assets/{with_thumb}/derivatives/otro/download-url", org=org)
+    assert bad.status_code == 422
+    nothing = await ana.call(
+        "GET", f"/assets/{uuid.uuid4()}/derivatives/thumbnail/download-url", org=org
+    )
+    assert nothing.status_code == 404
+
+    # otra organización no obtiene ni miniaturas ni URLs de derivados ajenos
+    bob, org_b = await _setup(api, users, "bob@example.com")
+    cross = await bob.call(
+        "GET", f"/assets/{with_thumb}/derivatives/proxy_720p/download-url", org=org_b
+    )
+    assert cross.status_code == 404
+    assert (await bob.call("GET", "/assets", org=org_b)).json()["items"] == []
+    viewer = await users.make("viewer2@example.com")
+    await add_member(api, ana, org, viewer, "viewer")
+    ok = await viewer.call(
+        "GET", f"/assets/{with_thumb}/derivatives/thumbnail/download-url", org=org
+    )
+    assert ok.status_code == 200  # media:read basta para ver
+
+
 # ---------------------------------------------------------------------------------- permisos
 
 
