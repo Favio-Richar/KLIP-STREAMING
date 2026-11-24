@@ -16,6 +16,7 @@ x-klick-worker: &klick-worker
   build:
     context: .
     dockerfile: infra/docker/api.Dockerfile
+    target: api
   image: klick-api:dev
   profiles: ["core"]
   restart: unless-stopped
@@ -32,8 +33,18 @@ services:
     command:
       ["dramatiq", "klick.worker_main", "--queues", "default", "--processes", "1", "--threads", "4"]
 
+  # Único worker con FFmpeg: procesa archivos de usuario (dato no confiable), así que corre con
+  # los mínimos privilegios: sin capacidades, sin escalada y con un /tmp acotado para los temporales.
   worker-media:
     <<: *klick-worker
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+      target: media
+    image: klick-media:dev
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    tmpfs: ["/tmp:size=4g"]
     command:
       ["dramatiq", "klick.worker_main", "--queues", "media", "--processes", "1", "--threads", "2"]
 

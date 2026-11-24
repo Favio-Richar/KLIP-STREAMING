@@ -1,5 +1,12 @@
-# Imagen común de API, workers y scheduler (ADR-021: los workers corren en contenedor).
-FROM python:3.12-slim AS base
+# Imágenes de Klick (ADR-021: los workers corren en contenedor). Dos destinos:
+#   --target api    API, worker-default/ai/publish y scheduler (sin FFmpeg).
+#   --target media  worker-media: la misma base + FFmpeg/FFprobe fijados por versión y huella.
+#
+# FFmpeg 7.1.1 estático con libass, libx264, freetype, harfbuzz y fontconfig. Se fija la huella
+# (digest), no solo la etiqueta: una etiqueta puede reapuntar a otra compilación.
+FROM mwader/static-ffmpeg:7.1.1@sha256:11a44711684c0b9f754c047dcd64235b8b52deab251bd0e0a86f22faa160749c AS ffmpeg
+
+FROM python:3.12-slim AS api
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -28,3 +35,14 @@ RUN useradd --system --uid 10001 --home /app klick && chown -R klick /app
 USER klick
 
 CMD ["uvicorn", "klick.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# --------------------------------------------------------------------------------- media
+FROM api AS media
+
+USER root
+COPY --from=ffmpeg /ffmpeg /usr/local/bin/ffmpeg
+COPY --from=ffmpeg /ffprobe /usr/local/bin/ffprobe
+# libass necesita fontconfig y al menos una fuente del sistema para subtítulos quemados.
+RUN apt-get update     && apt-get install -y --no-install-recommends fontconfig fonts-dejavu-core     && rm -rf /var/lib/apt/lists/*     && fc-cache -f
+ENV KLICK_FFMPEG_VERSION=7.1.1
+USER klick
