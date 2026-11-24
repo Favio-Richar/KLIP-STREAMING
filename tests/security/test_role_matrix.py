@@ -15,7 +15,7 @@ from actors import BASE, Users
 from harness import ApiHarness
 from klick.orgs.permissions import ROLE_PERMISSIONS
 from sec_policy import POLICY, Policy
-from sec_scenario import ROLE_ORDER, Tenant, build_tenant
+from sec_scenario import MEDIA_BODIES, ROLE_ORDER, Tenant, build_tenant, media_path_values
 
 pytestmark = pytest.mark.db
 
@@ -37,6 +37,7 @@ def _request(method: str, template: str, t: Tenant) -> tuple[str, Any]:
             "token_id": str(uuid.uuid4()),  # los tokens ajenos se comprueban en test_idor
             "org_id": t.org_id,
             "job_id": t.job_id,
+            **media_path_values(t),
         }[m.group(1)],
         template,
     )
@@ -51,6 +52,9 @@ def _request(method: str, template: str, t: Tenant) -> tuple[str, Any]:
         body = {"kind": "system.ping", "payload": {"steps": 1}}
     elif (method, template) == ("PATCH", f"{BASE}/orgs/{{org_id}}"):
         body = {"name": "Matrix Org"}
+    media_body = MEDIA_BODIES.get((method, template.removeprefix(BASE)))
+    if media_body is not None:
+        body = media_body
     return path.removeprefix(BASE), body
 
 
@@ -113,7 +117,7 @@ async def test_denials_do_not_change_state(api: ApiHarness, tenant: Tenant) -> N
 
 
 async def test_api_token_scopes_limit_the_matrix(api: ApiHarness, tenant: Tenant) -> None:
-    """Un token del owner con solo media:read no puede usar ningún endpoint con permiso propio."""
+    """Un token del owner con solo media:read solo usa endpoints de ese permiso; el resto da 403."""
     raw = (
         await tenant.owner.call(
             "POST",
@@ -132,7 +136,12 @@ async def test_api_token_scopes_limit_the_matrix(api: ApiHarness, tenant: Tenant
             r = await anon.request(
                 method, f"{BASE}{path}", json=body, headers={"Authorization": f"Bearer {raw}"}
             )
-            if policy.self_service:
+            if policy.permission == "media:read":
+                # el alcance del token SÍ cubre este permiso: la autorización debe pasar
+                assert r.status_code not in (401, 403) and r.status_code < 500, (
+                    f"{method} {template}: {r.status_code}"
+                )
+            elif policy.self_service:
                 # salir de la organización no exige permiso, pero el objetivo no es el propio
                 assert r.status_code in (403, 404), (method, template, r.status_code)
             else:

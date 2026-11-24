@@ -1,0 +1,424 @@
+"""API de la biblioteca de medios (docs/05 §2: "Proyectos y biblioteca"). Permisos `media:*`.
+
+La subida multipart (`POST /assets/uploads`...) llega con F1-02.
+"""
+
+import uuid
+from datetime import datetime
+from typing import Annotated, Any, Literal
+
+from fastapi import APIRouter, Depends, Query, Request, Response, status
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from klick.media.service import UNSET, AssetView, MediaService
+from klick.orgs.deps import CurrentPrincipal
+
+projects_router = APIRouter(prefix="/projects", tags=["media"])
+folders_router = APIRouter(prefix="/folders", tags=["media"])
+tags_router = APIRouter(prefix="/tags", tags=["media"])
+assets_router = APIRouter(prefix="/assets", tags=["media"])
+
+
+def get_media_service(request: Request) -> MediaService:
+    service: MediaService = request.app.state.media_service
+    return service
+
+
+Media = Annotated[MediaService, Depends(get_media_service)]
+Limit = Annotated[int, Query(ge=1, le=200)]
+
+READ, WRITE = "media:read", "media:write"
+
+
+def _name(value: str) -> str:
+    value = value.strip()
+    if not value:
+        raise ValueError("El nombre no puede estar vacío.")
+    return value
+
+
+# ------------------------------------------------------------------------------- esquemas
+
+
+class ProjectCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1, max_length=200)
+    description: str | None = Field(default=None, max_length=2000)
+    settings: dict[str, Any] = Field(default_factory=dict)
+
+    _strip = field_validator("name")(_name)
+
+
+class ProjectUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = Field(default=None, max_length=2000)
+    settings: dict[str, Any] | None = None
+    archived: bool | None = None
+
+    @field_validator("name")
+    @classmethod
+    def _strip(cls, value: str | None) -> str | None:
+        return None if value is None else _name(value)
+
+
+class ProjectOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    name: str
+    description: str | None
+    settings: dict[str, Any]
+    archived_at: datetime | None
+    created_at: datetime
+    updated_at: datetime | None
+
+
+class ProjectPage(BaseModel):
+    items: list[ProjectOut]
+    next_cursor: uuid.UUID | None
+
+
+class FolderCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1, max_length=200)
+    project_id: uuid.UUID | None = None
+    parent_id: uuid.UUID | None = None
+
+    _strip = field_validator("name")(_name)
+
+
+class FolderUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    parent_id: uuid.UUID | None = None  # null explícito = mover a la raíz
+
+    @field_validator("name")
+    @classmethod
+    def _strip(cls, value: str | None) -> str | None:
+        return None if value is None else _name(value)
+
+
+class FolderOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    project_id: uuid.UUID | None
+    parent_id: uuid.UUID | None
+    name: str
+    created_at: datetime
+
+
+class TagCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1, max_length=60)
+
+    _strip = field_validator("name")(_name)
+
+
+class TagOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    name: str
+
+
+class AssetOut(BaseModel):
+    id: uuid.UUID
+    project_id: uuid.UUID | None
+    folder_id: uuid.UUID | None
+    kind: str
+    source_type: str
+    title: str
+    original_filename: str | None
+    status: str
+    duration_ms: int | None
+    width: int | None
+    height: int | None
+    fps: float | None
+    video_codec: str | None
+    audio_codec: str | None
+    container: str | None
+    bitrate_kbps: int | None
+    has_audio: bool | None
+    error: dict[str, Any] | None
+    tags: list[TagOut]
+    created_at: datetime
+    updated_at: datetime | None
+
+    @classmethod
+    def of(cls, view: AssetView) -> "AssetOut":
+        a = view.asset
+        return cls(
+            id=a.id,
+            project_id=a.project_id,
+            folder_id=a.folder_id,
+            kind=a.kind,
+            source_type=a.source_type,
+            title=a.title,
+            original_filename=a.original_filename,
+            status=a.status,
+            duration_ms=a.duration_ms,
+            width=a.width,
+            height=a.height,
+            fps=float(a.fps) if a.fps is not None else None,
+            video_codec=a.video_codec,
+            audio_codec=a.audio_codec,
+            container=a.container,
+            bitrate_kbps=a.bitrate_kbps,
+            has_audio=a.has_audio,
+            error=a.error,
+            tags=[TagOut.model_validate(t) for t in view.tags],
+            created_at=a.created_at,
+            updated_at=a.updated_at,
+        )
+
+
+class AssetPage(BaseModel):
+    items: list[AssetOut]
+    next_cursor: uuid.UUID | None
+
+
+class AssetUpdate(BaseModel):
+    """Solo cambia lo enviado: `project_id: null` saca al asset del proyecto."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    title: str | None = Field(default=None, min_length=1, max_length=300)
+    project_id: uuid.UUID | None = None
+    folder_id: uuid.UUID | None = None
+    tag_ids: list[uuid.UUID] | None = Field(default=None, max_length=50)
+
+    @field_validator("title")
+    @classmethod
+    def _strip(cls, value: str | None) -> str | None:
+        return None if value is None else _name(value)
+
+
+class DerivativeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    kind: str
+    meta: dict[str, Any]
+    created_at: datetime
+
+
+class DownloadUrl(BaseModel):
+    url: str
+    expires_in: int
+
+
+# ---------------------------------------------------------------------------------- proyectos
+
+
+@projects_router.get("", response_model=ProjectPage)
+async def list_projects(
+    principal: CurrentPrincipal,
+    media: Media,
+    limit: Limit = 50,
+    cursor: uuid.UUID | None = None,
+    include_archived: bool = False,
+) -> ProjectPage:
+    principal.require(READ)
+    page = await media.list_projects(
+        principal.org_id, limit=limit, cursor=cursor, include_archived=include_archived
+    )
+    return ProjectPage(
+        items=[ProjectOut.model_validate(p) for p in page.items], next_cursor=page.next_cursor
+    )
+
+
+@projects_router.post("", status_code=status.HTTP_201_CREATED, response_model=ProjectOut)
+async def create_project(body: ProjectCreate, principal: CurrentPrincipal, media: Media) -> Any:
+    principal.require(WRITE)
+    return await media.create_project(
+        principal, name=body.name, description=body.description, settings=body.settings
+    )
+
+
+@projects_router.get("/{project_id}", response_model=ProjectOut)
+async def get_project(project_id: uuid.UUID, principal: CurrentPrincipal, media: Media) -> Any:
+    principal.require(READ)
+    return await media.get_project(principal.org_id, project_id)
+
+
+@projects_router.patch("/{project_id}", response_model=ProjectOut)
+async def update_project(
+    project_id: uuid.UUID, body: ProjectUpdate, principal: CurrentPrincipal, media: Media
+) -> Any:
+    principal.require(WRITE)
+    sent = body.model_fields_set
+    return await media.update_project(
+        principal,
+        project_id,
+        name=body.name,
+        description=body.description if "description" in sent else UNSET,
+        settings=body.settings,
+        archived=body.archived,
+    )
+
+
+@projects_router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_project(
+    project_id: uuid.UUID, principal: CurrentPrincipal, media: Media
+) -> Response:
+    principal.require(WRITE)
+    await media.delete_project(principal, project_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ----------------------------------------------------------------------------------- carpetas
+
+
+@folders_router.get("", response_model=list[FolderOut])
+async def list_folders(
+    principal: CurrentPrincipal,
+    media: Media,
+    project_id: uuid.UUID | None = None,
+    parent_id: uuid.UUID | None = None,
+    recursive: Annotated[
+        bool, Query(description="Todas las carpetas del proyecto, sin importar el nivel")
+    ] = False,
+) -> Any:
+    principal.require(READ)
+    return await media.list_folders(
+        principal.org_id, project_id=project_id, parent_id=parent_id, any_parent=recursive
+    )
+
+
+@folders_router.post("", status_code=status.HTTP_201_CREATED, response_model=FolderOut)
+async def create_folder(body: FolderCreate, principal: CurrentPrincipal, media: Media) -> Any:
+    principal.require(WRITE)
+    return await media.create_folder(
+        principal, name=body.name, project_id=body.project_id, parent_id=body.parent_id
+    )
+
+
+@folders_router.patch("/{folder_id}", response_model=FolderOut)
+async def update_folder(
+    folder_id: uuid.UUID, body: FolderUpdate, principal: CurrentPrincipal, media: Media
+) -> Any:
+    principal.require(WRITE)
+    return await media.update_folder(
+        principal,
+        folder_id,
+        name=body.name,
+        parent_id=body.parent_id if "parent_id" in body.model_fields_set else UNSET,
+    )
+
+
+@folders_router.delete("/{folder_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_folder(
+    folder_id: uuid.UUID, principal: CurrentPrincipal, media: Media
+) -> Response:
+    principal.require(WRITE)
+    await media.delete_folder(principal, folder_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ---------------------------------------------------------------------------------- etiquetas
+
+
+@tags_router.get("", response_model=list[TagOut])
+async def list_tags(
+    principal: CurrentPrincipal, media: Media, q: Annotated[str | None, Query(max_length=60)] = None
+) -> Any:
+    principal.require(READ)
+    return await media.list_tags(principal.org_id, q=q)
+
+
+@tags_router.post("", status_code=status.HTTP_201_CREATED, response_model=TagOut)
+async def create_tag(body: TagCreate, principal: CurrentPrincipal, media: Media) -> Any:
+    principal.require(WRITE)
+    return await media.create_tag(principal, name=body.name)
+
+
+@tags_router.delete("/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_tag(tag_id: uuid.UUID, principal: CurrentPrincipal, media: Media) -> Response:
+    principal.require(WRITE)
+    await media.delete_tag(principal, tag_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# -------------------------------------------------------------------------------------- assets
+
+
+@assets_router.get("", response_model=AssetPage)
+async def list_assets(
+    principal: CurrentPrincipal,
+    media: Media,
+    limit: Limit = 50,
+    cursor: uuid.UUID | None = None,
+    project_id: uuid.UUID | None = None,
+    folder_id: uuid.UUID | None = None,
+    kind: Literal["video", "audio", "image"] | None = None,
+    asset_status: Annotated[
+        Literal["uploading", "processing", "ready", "failed"] | None, Query(alias="status")
+    ] = None,
+    q: Annotated[str | None, Query(max_length=200)] = None,
+    tag_id: Annotated[list[uuid.UUID] | None, Query(max_length=20)] = None,
+) -> AssetPage:
+    principal.require(READ)
+    page = await media.list_assets(
+        principal.org_id,
+        limit=limit,
+        cursor=cursor,
+        project_id=project_id,
+        folder_id=folder_id,
+        kind=kind,
+        status=asset_status,
+        q=q,
+        tag_ids=tag_id,
+    )
+    return AssetPage(items=[AssetOut.of(v) for v in page.items], next_cursor=page.next_cursor)
+
+
+@assets_router.get("/{asset_id}", response_model=AssetOut)
+async def get_asset(asset_id: uuid.UUID, principal: CurrentPrincipal, media: Media) -> AssetOut:
+    principal.require(READ)
+    return AssetOut.of(await media.get_asset(principal.org_id, asset_id))
+
+
+@assets_router.patch("/{asset_id}", response_model=AssetOut)
+async def update_asset(
+    asset_id: uuid.UUID, body: AssetUpdate, principal: CurrentPrincipal, media: Media
+) -> AssetOut:
+    principal.require(WRITE)
+    sent = body.model_fields_set
+    view = await media.update_asset(
+        principal,
+        asset_id,
+        title=body.title,
+        project_id=body.project_id if "project_id" in sent else UNSET,
+        folder_id=body.folder_id if "folder_id" in sent else UNSET,
+        tag_ids=body.tag_ids,
+    )
+    return AssetOut.of(view)
+
+
+@assets_router.delete("/{asset_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_asset(asset_id: uuid.UUID, principal: CurrentPrincipal, media: Media) -> Response:
+    principal.require(WRITE)
+    await media.delete_asset(principal, asset_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@assets_router.get("/{asset_id}/derivatives", response_model=list[DerivativeOut])
+async def list_derivatives(asset_id: uuid.UUID, principal: CurrentPrincipal, media: Media) -> Any:
+    principal.require(READ)
+    return await media.list_derivatives(principal.org_id, asset_id)
+
+
+@assets_router.get("/{asset_id}/download-url", response_model=DownloadUrl)
+async def download_url(
+    asset_id: uuid.UUID, request: Request, principal: CurrentPrincipal, media: Media
+) -> DownloadUrl:
+    principal.require(READ)
+    url = await media.download_url(principal.org_id, asset_id)
+    return DownloadUrl(url=url, expires_in=request.app.state.settings.storage_url_ttl_s)

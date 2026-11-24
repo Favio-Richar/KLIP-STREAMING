@@ -30,7 +30,7 @@ Formato: `MÉTODO ruta` — permiso requerido. Todas las rutas aplican RLS y `se
 `GET/POST /orgs`, `GET/PATCH /orgs/{id}`, `GET /members`, `POST /invitations`, `POST /invitations/{token}/accept`, `PATCH /members/{id}` (rol), `DELETE /members/{id}` — `org:manage`, `members:manage`.
 
 **Proyectos y biblioteca (`media`)**
-`GET/POST /projects`, `GET/PATCH/DELETE /projects/{id}`; `GET/POST /folders`; `GET/POST /tags`;
+`GET/POST /projects`, `GET/PATCH/DELETE /projects/{id}`; `GET/POST /folders`, `PATCH/DELETE /folders/{id}`; `GET/POST /tags`, `DELETE /tags/{id}`;
 `POST /assets/uploads` → URLs firmadas; `POST /assets/uploads/{id}/complete|abort`;
 `GET /assets` (filtros: proyecto, tipo, estado, texto, etiquetas), `GET/PATCH/DELETE /assets/{id}`, `GET /assets/{id}/download-url`, `GET /assets/{id}/derivatives` — `media:read|write`.
 

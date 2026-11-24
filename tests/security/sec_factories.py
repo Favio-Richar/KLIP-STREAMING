@@ -112,6 +112,89 @@ async def _storage_objects(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: Ctx
     )
 
 
+async def _object(conn: asyncpg.Connection, org_id: uuid.UUID) -> uuid.UUID:
+    new_id: uuid.UUID = await conn.fetchval(
+        "insert into storage_objects (id, org_id, bucket, key) "
+        "values (gen_random_uuid(), $1::uuid, 'b', 'org/' || $1::uuid::text || '/o/' || $2::text) "
+        "returning id",
+        org_id,
+        secrets.token_hex(6),
+    )
+    return new_id
+
+
+async def _asset(conn: asyncpg.Connection, org_id: uuid.UUID) -> uuid.UUID:
+    new_id: uuid.UUID = await conn.fetchval(
+        "insert into media_assets (id, org_id, kind, title, storage_object_id) "
+        "values (gen_random_uuid(), $1, 'video', 'v', $2) returning id",
+        org_id,
+        await _object(conn, org_id),
+    )
+    return new_id
+
+
+async def _projects(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: Ctx) -> None:
+    await conn.execute(
+        "insert into projects (id, org_id, name) values (gen_random_uuid(), $1, 'p')", org_id
+    )
+
+
+async def _folders(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: Ctx) -> None:
+    await conn.execute(
+        "insert into folders (id, org_id, name) values (gen_random_uuid(), $1, 'f')", org_id
+    )
+
+
+async def _tags(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: Ctx) -> None:
+    await conn.execute(
+        "insert into tags (id, org_id, name) values (gen_random_uuid(), $1, 't')", org_id
+    )
+
+
+async def _media_assets(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: Ctx) -> None:
+    await _asset(conn, org_id)
+
+
+async def _media_derivatives(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: Ctx) -> None:
+    await conn.execute(
+        "insert into media_derivatives (id, org_id, asset_id, kind, storage_object_id) "
+        "values (gen_random_uuid(), $1, $2, 'thumbnail', $3)",
+        org_id,
+        await _asset(conn, org_id),
+        await _object(conn, org_id),
+    )
+
+
+async def _uploads(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: Ctx) -> None:
+    obj = await _object(conn, org_id)
+    asset = await conn.fetchval(
+        "insert into media_assets (id, org_id, kind, title, storage_object_id) "
+        "values (gen_random_uuid(), $1, 'video', 'v', $2) returning id",
+        org_id,
+        obj,
+    )
+    await conn.execute(
+        "insert into uploads (id, org_id, asset_id, storage_object_id, expires_at) "
+        "values (gen_random_uuid(), $1, $2, $3, now() + interval '1 day')",
+        org_id,
+        asset,
+        obj,
+    )
+
+
+async def _asset_tags(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: Ctx) -> None:
+    tag = await conn.fetchval(
+        "insert into tags (id, org_id, name) values (gen_random_uuid(), $1, 't') returning id",
+        org_id,
+    )
+    await conn.execute(
+        "insert into asset_tags (org_id, asset_id, tag_id) values ($1, $2, $3)",
+        org_id,
+        await _asset(conn, org_id),
+        tag,
+    )
+
+
 # tabla -> (tipo, columna que identifica la organización, fábrica)
 FACTORIES: dict[str, tuple[Kind, str, Factory]] = {
     "organizations": ("org_root", "id", _organizations),
@@ -123,6 +206,13 @@ FACTORIES: dict[str, tuple[Kind, str, Factory]] = {
     "outbox_events": ("tenant", "org_id", _outbox_events),
     "idempotency_keys": ("tenant", "org_id", _idempotency_keys),
     "storage_objects": ("tenant", "org_id", _storage_objects),
+    "projects": ("tenant", "org_id", _projects),
+    "folders": ("tenant", "org_id", _folders),
+    "tags": ("tenant", "org_id", _tags),
+    "media_assets": ("tenant", "org_id", _media_assets),
+    "media_derivatives": ("tenant", "org_id", _media_derivatives),
+    "uploads": ("tenant", "org_id", _uploads),
+    "asset_tags": ("tenant", "org_id", _asset_tags),
     # Append-only: la aplicación solo inserta y lee lo suyo; nunca UPDATE ni DELETE.
     "audit_events": ("append_only", "org_id", _audit_events),
 }

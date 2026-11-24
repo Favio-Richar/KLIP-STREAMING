@@ -13,7 +13,14 @@ import pytest
 from actors import BASE, Users, invite_token
 from harness import ApiHarness
 from sec_policy import POLICY
-from sec_scenario import ROLE_ORDER, Tenant, build_tenant, sql
+from sec_scenario import (
+    MEDIA_BODIES,
+    ROLE_ORDER,
+    Tenant,
+    build_tenant,
+    media_path_values,
+    sql,
+)
 
 pytestmark = pytest.mark.db
 
@@ -23,6 +30,7 @@ BODIES: dict[tuple[str, str], Any] = {
     ("POST", f"{BASE}/me/api-tokens"): {"name": "pwn", "scopes": ["media:read"]},
     ("POST", f"{BASE}/jobs"): {"kind": "system.ping", "payload": {"steps": 1}},
     ("PATCH", f"{BASE}/orgs/{{org_id}}"): {"name": "pwned"},
+    **{(m, f"{BASE}{t}"): b for (m, t), b in MEDIA_BODIES.items()},
 }
 
 
@@ -33,6 +41,7 @@ def _path(template: str, a: Tenant, ids: dict[str, str]) -> str:
         "token_id": a.token_id,
         "job_id": a.job_id,
         "org_id": a.org_id,
+        **media_path_values(a),
         **ids,
     }
     return re.sub(r"\{(\w+)\}", lambda m: values[m.group(1)], template)

@@ -7,6 +7,7 @@ from typing import Any
 import asyncpg
 from actors import Actor, Users, add_member, create_org
 from harness import ApiHarness
+from media_helpers import make_asset
 from sqlalchemy.engine import make_url
 
 ROLE_ORDER = ("viewer", "reviewer", "editor", "admin", "owner")
@@ -34,6 +35,10 @@ class Tenant:
     token_id: str = ""
     token_raw: str = ""
     job_id: str = ""
+    project_id: str = ""
+    folder_id: str = ""
+    tag_id: str = ""
+    asset_id: str = ""
     extra: dict[str, Any] = field(default_factory=dict)
 
     def actor(self, role: str) -> Actor:
@@ -76,8 +81,49 @@ async def build_tenant(api: ApiHarness, users: Users, tag: str) -> Tenant:
         json={"kind": "system.ping", "payload": {"steps": 1}},
     )
     tenant.job_id = job.json()["job_id"]
+    # recursos de la biblioteca de medios (F1-01)
+    project = await owner.call("POST", "/projects", org=org["id"], json={"name": f"Proyecto {tag}"})
+    tenant.project_id = project.json()["id"]
+    folder = await owner.call(
+        "POST", "/folders", org=org["id"], json={"name": "Carpeta", "project_id": tenant.project_id}
+    )
+    tenant.folder_id = folder.json()["id"]
+    label = await owner.call("POST", "/tags", org=org["id"], json={"name": f"etiqueta-{tag}"})
+    tenant.tag_id = label.json()["id"]
+    tenant.asset_id = str(
+        await make_asset(
+            api,
+            org["id"],
+            owner.user_id,
+            title=f"Video {tag}",
+            status="ready",
+            project_id=uuid.UUID(tenant.project_id),
+            folder_id=uuid.UUID(tenant.folder_id),
+        )
+    )
     return tenant
 
 
 def random_uuid() -> str:
     return str(uuid.uuid4())
+
+
+def media_path_values(t: "Tenant") -> dict[str, str]:
+    """Identificadores de los recursos de medios de una organización, por nombre de parámetro."""
+    return {
+        "project_id": t.project_id,
+        "folder_id": t.folder_id,
+        "tag_id": t.tag_id,
+        "asset_id": t.asset_id,
+    }
+
+
+# Cuerpos válidos para las escrituras de medios (clave: método y plantilla relativa a /api/v1).
+MEDIA_BODIES: dict[tuple[str, str], object] = {
+    ("POST", "/projects"): {"name": "pwn"},
+    ("PATCH", "/projects/{project_id}"): {"name": "pwn"},
+    ("POST", "/folders"): {"name": "pwn"},
+    ("PATCH", "/folders/{folder_id}"): {"name": "pwn"},
+    ("POST", "/tags"): {"name": "pwn"},
+    ("PATCH", "/assets/{asset_id}"): {"title": "pwn"},
+}

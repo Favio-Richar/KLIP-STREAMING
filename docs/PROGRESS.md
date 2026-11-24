@@ -27,7 +27,7 @@ Formato: `- [ ] ID título` → `- [x] ID título — AAAA-MM-DD — resultado`
 
 ## F1 — Media y Clip Studio
 
-- [ ] F1-01 Módulo `media`
+- [x] F1-01 Módulo `media` — 2026-11-24 — migración 0007 reversible (7 tablas, FKs compuestas, RLS, triggers de ref_count e invariantes), servicio, API de proyectos/carpetas/etiquetas/assets/derivados, estados y subidas; 15 pruebas propias + arnés de seguridad ampliado
 - [ ] F1-02 Subida multipart
 - [ ] F1-03 Imagen `worker-media`
 - [ ] F1-04 Trabajo `media.probe`
