@@ -34,7 +34,7 @@ Formato: `- [ ] ID título` → `- [x] ID título — AAAA-MM-DD — resultado`
 - [x] F1-05 Biblioteca — 2026-11-24 — cuadrícula/lista con miniaturas, búsqueda con retardo, filtros, carga progresiva, detalle con reproductor del proxy, renombrar, etiquetas, reanálisis y eliminación con confirmación; E2E real con worker
 - [x] F1-06 Esquema `EditProject` — 2026-11-24 — JSON Schema como fuente única, Pydantic y Zod generados (con comprobación en lint), validación en 3 capas, reglas semánticas en Python y TS probadas con 37 fixtures compartidos, marco de migraciones; 75 pytest + 45 Vitest
 - [x] F1-07 Módulo `clips` — 2026-11-24 — migración 0009 reversible (clips, edit_projects, clip_versions con RLS, FKs compuestas y versiones inmutables por trigger y permisos), creación desde un tramo, guardado con If-Match/ETag (412 verificado con carrera real), validación contra assets reales, versiones y API; 26 pruebas propias + arnés de seguridad ampliado
-- [ ] F1-08 Generador del grafo de render
+- [x] F1-08 Generador del grafo de render — 2026-11-24 — módulo puro y determinista (fit/follow/manual/split, zoom con keyframes, velocidad, texto por archivo, imágenes, fundidos, mezcla con ducking, loudnorm 2 pasadas, subtítulos); 40 pruebas de instantánea/seguridad + 18 con FFmpeg real midiendo el resultado
 - [ ] F1-09 Worker de render
 - [ ] F1-10 Editor
 - [ ] F1-11 Texto, imagen y subtítulos manuales

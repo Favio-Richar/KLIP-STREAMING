@@ -54,6 +54,8 @@ FROM media AS media-test
 USER root
 RUN uv sync --frozen --all-packages
 COPY --chown=klick services/api/tests services/api/tests
+# Los fixtures del documento de edición (los usan las pruebas de render)
+COPY --chown=klick packages/video-project-schema/fixtures packages/video-project-schema/fixtures
 USER klick
 ENV KLICK_REQUIRE_FFMPEG=1
-CMD ["pytest", "services/api/tests/test_media_ffmpeg.py", "services/api/tests/test_media_probe.py", "-q", "-p", "no:cacheprovider"]
+CMD ["pytest", "services/api/tests/test_media_ffmpeg.py", "services/api/tests/test_media_probe.py", "services/api/tests/test_render_ffmpeg.py", "-q", "-p", "no:cacheprovider"]

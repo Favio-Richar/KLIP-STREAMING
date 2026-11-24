@@ -10,6 +10,9 @@ node_modules
 docs
 tests
 apps
-packages
+packages/*
+!packages/video-project-schema
+packages/video-project-schema/*
+!packages/video-project-schema/fixtures
 design-system
 *.md
