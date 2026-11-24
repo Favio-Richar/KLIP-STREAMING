@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import UTC, datetime
+from pathlib import Path
 
 import structlog
 from sqlalchemy import select, update
@@ -83,6 +84,65 @@ class StorageService:
             if obj is None or obj.status == "deleted":
                 raise _not_found()
             return obj
+
+    async def download(self, org_id: uuid.UUID, object_id: uuid.UUID, path: Path) -> int:
+        """Descarga un objeto ``ready`` a disco (para el procesamiento en workers)."""
+        obj = await self.get(org_id, object_id)
+        if obj.status != "ready":
+            raise _conflict("storage_object_state", "El objeto aún no está listo.")
+        return await self._backend.download_file(obj.key, path)
+
+    async def get_by_key(self, org_id: uuid.UUID, key: str) -> StorageObject | None:
+        async with self._db.tenant_session(org_id) as s:
+            return (
+                await s.execute(
+                    select(StorageObject).where(
+                        StorageObject.org_id == org_id,
+                        StorageObject.bucket == self._backend.bucket,
+                        StorageObject.key == key,
+                    )
+                )
+            ).scalar_one_or_none()
+
+    async def store_file(
+        self,
+        org_id: uuid.UUID,
+        key: str,
+        path: Path,
+        *,
+        mime: str,
+        created_by: uuid.UUID | None = None,
+    ) -> StorageObject:
+        """Sube un archivo local bajo ``key`` y deja el objeto ``ready``. Es repetible: si el objeto
+        ya existe (p. ej. al reprocesar un derivado) reutiliza la fila y reemplaza el contenido."""
+        obj = await self.get_by_key(org_id, key)
+        if obj is None:
+            obj = await self.register_upload(org_id, key=key, mime=mime, created_by=created_by)
+        elif obj.status == "deleted":
+            raise _conflict("storage_object_state", "El objeto fue eliminado.")
+        await self._backend.upload_file(key, path, mime)
+        return await self.mark_ready(org_id, obj.id)
+
+    async def set_verified_sha256(
+        self, org_id: uuid.UUID, object_id: uuid.UUID, sha256: bytes
+    ) -> None:
+        """Guarda el hash que calculó el servidor sobre el contenido real. Una vez fijado no
+        cambia: si llegara otro distinto, el contenido del objeto fue alterado."""
+        if len(sha256) != 32:
+            raise ApiError(422, "invalid_sha256", "Invalid sha256", "Se esperan 32 bytes.")
+        async with self._db.tenant_session(org_id) as s:
+            obj = (
+                await s.execute(
+                    select(StorageObject)
+                    .where(StorageObject.id == object_id, StorageObject.org_id == org_id)
+                    .with_for_update()
+                )
+            ).scalar_one_or_none()
+            if obj is None or obj.status == "deleted":
+                raise _not_found()
+            if obj.sha256 is not None and obj.sha256 != sha256:
+                raise _conflict("storage_hash_mismatch", "El contenido no coincide con su hash.")
+            obj.sha256 = sha256
 
     async def mark_ready(
         self, org_id: uuid.UUID, object_id: uuid.UUID, *, sha256: bytes | None = None

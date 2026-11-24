@@ -6,6 +6,7 @@ operaciones del servidor (HEAD, borrado, multipart) usan el endpoint interno.
 
 import asyncio
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Protocol
 
 import boto3
@@ -46,6 +47,8 @@ class StorageBackend(Protocol):
     async def get_bytes(self, key: str, max_bytes: int = 50 * 1024 * 1024) -> bytes: ...
     async def delete(self, key: str) -> None: ...
     async def delete_many(self, keys: list[str]) -> None: ...
+    async def download_file(self, key: str, path: Path) -> int: ...
+    async def upload_file(self, key: str, path: Path, content_type: str | None = None) -> None: ...
     def presign_get(
         self,
         key: str,
@@ -189,6 +192,22 @@ class S3Backend:
                 "put_object", Params=params, ExpiresIn=_ttl(expires_s)
             )
         )
+
+    async def download_file(self, key: str, path: Path) -> int:
+        """Descarga un objeto a disco por partes (sin cargarlo en memoria). Devuelve su tamaño."""
+        validate_key(key)
+
+        def run() -> int:
+            self._client.download_file(self.bucket, key, str(path))
+            return path.stat().st_size
+
+        return await asyncio.to_thread(run)
+
+    async def upload_file(self, key: str, path: Path, content_type: str | None = None) -> None:
+        """Sube un archivo de disco (multipart automático para los grandes)."""
+        validate_key(key)
+        extra = {"ExtraArgs": {"ContentType": content_type}} if content_type else {}
+        await asyncio.to_thread(self._client.upload_file, str(path), self.bucket, key, **extra)
 
     # ------------------------------------------------------------------------ multipart
 

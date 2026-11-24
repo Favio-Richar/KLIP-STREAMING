@@ -2630,6 +2630,50 @@
         ]
       }
     },
+    "/api/v1/assets/{asset_id}/reprocess": {
+      "post": {
+        "description": "Vuelve a analizar el archivo y regenerar sus derivados (para un asset fallido o listo).",
+        "operationId": "reprocess_asset_api_v1_assets__asset_id__reprocess_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reprocess Asset",
+        "tags": [
+          "media"
+        ]
+      }
+    },
     "/api/v1/auth/email/verify": {
       "post": {
         "operationId": "verify_email_api_v1_auth_email_verify_post",

@@ -87,7 +87,7 @@ def create_app(
         storage = S3Backend(settings)
         app.state.storage = storage
         app.state.storage_service = StorageService(db, storage, settings)
-        app.state.media_service = MediaService(db, app.state.storage_service)
+        app.state.media_service = MediaService(db, app.state.storage_service, app.state.job_service)
         app.state.upload_service = UploadService(
             db, storage, app.state.storage_service, app.state.media_service, settings
         )

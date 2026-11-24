@@ -4,6 +4,9 @@ import klick.jobs_handlers  # noqa: F401 - registra los kinds de job
 from klick.core.config import get_settings
 from klick.core.logging import configure_logging
 from klick.core.queue import setup_broker
+from klick.models import load_all_models
+
+load_all_models()  # el MetaData debe estar completo en el worker (claves foráneas)
 
 _settings = get_settings()
 configure_logging(_settings.log_level, _settings.log_json)

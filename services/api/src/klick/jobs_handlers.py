@@ -5,6 +5,7 @@ from typing import Any
 
 from klick.core.jobs import PermanentJobError, job_kind
 from klick.core.worker import JobContext
+from klick.media import jobs as _media_jobs  # noqa: F401 - registra media.probe
 
 MAX_STEPS = 50
 MAX_STEP_DELAY_MS = 5000

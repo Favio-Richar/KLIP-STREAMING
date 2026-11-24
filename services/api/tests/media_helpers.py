@@ -1,6 +1,8 @@
 """Utilidades de pruebas para la biblioteca de medios (compartidas con tests/security)."""
 
+import subprocess
 import uuid
+from pathlib import Path
 from typing import Any
 
 import asyncpg
@@ -99,3 +101,32 @@ async def make_asset(
     if status == "failed":
         await media(api).transition_asset(p.org_id, asset.id, "failed", error={"code": "corrupt"})
     return asset.id
+
+
+def _ffmpeg(*args: str) -> None:
+    out = subprocess.run(  # noqa: S603
+        ["ffmpeg", "-y", "-nostdin", "-hide_banner", "-loglevel", "error", *args],  # noqa: S607
+        capture_output=True,
+        text=True,
+    )
+    assert out.returncode == 0, out.stderr
+
+
+def make_samples(d: Path) -> dict[str, Path]:
+    """Archivos de prueba generados con FFmpeg (válidos y maliciosos). Requiere ffmpeg."""
+    lavfi = ["-f", "lavfi", "-i"]
+    video = ["-c:v", "libx264", "-pix_fmt", "yuv420p"]
+    _ffmpeg(*lavfi, "testsrc2=size=320x180:rate=25:duration=3", *lavfi, "sine=frequency=440:duration=3",
+            *video, "-c:a", "aac", "-shortest", str(d / "video.mp4"))  # fmt: skip
+    _ffmpeg(*lavfi, "testsrc2=size=320x180:rate=25:duration=2", *video, str(d / "silent.mp4"))
+    _ffmpeg("-i", str(d / "video.mp4"), "-c", "copy", str(d / "video.mkv"))
+    _ffmpeg(*lavfi, "sine=frequency=440:duration=2", str(d / "tone.wav"))
+    _ffmpeg(*lavfi, "color=c=red:s=64x48", "-frames:v", "1", str(d / "image.png"))
+    _ffmpeg(*lavfi, "testsrc2=size=1920x1080:rate=25:duration=2", *video, str(d / "hd.mp4"))
+    (d / "text.mp4").write_text("esto no es un video, solo texto\n" * 50)
+    data = (d / "video.mp4").read_bytes()
+    (d / "truncated.mp4").write_bytes(data[:2048])
+    (d / "playlist.mp4").write_text(
+        "#EXTM3U\n#EXT-X-VERSION:3\n#EXTINF:1,\nhttp://127.0.0.1:9/ssrf.ts\n#EXT-X-ENDLIST\n"
+    )
+    return {f.name: f for f in d.iterdir()}

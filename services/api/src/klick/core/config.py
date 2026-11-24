@@ -50,6 +50,16 @@ class Settings(BaseSettings):
     upload_part_min_bytes: int = 8 * 1024**2
     upload_urls_per_request: int = 100
 
+    # Análisis y derivados de medios (F1-04). Docs/07: 4 h por archivo.
+    ffmpeg_path: str = "ffmpeg"
+    ffprobe_path: str = "ffprobe"
+    media_scratch_dir: str = ""  # vacío = directorio temporal del sistema
+    media_max_duration_s: int = 4 * 3600
+    media_max_dimension: int = 8192  # lado máximo en píxeles
+    media_max_streams: int = 32
+    media_probe_timeout_s: float = 120
+    media_ffmpeg_threads: int = 2
+
     job_heartbeat_interval_s: float = 10
     job_heartbeat_timeout_s: float = 60  # sin latido durante este tiempo = worker perdido
     job_backoff_base_s: float = 5  # reintento n espera base * 2**(n-1), máx. 15 min

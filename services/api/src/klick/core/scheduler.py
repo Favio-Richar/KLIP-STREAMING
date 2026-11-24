@@ -225,6 +225,9 @@ async def run_scheduler(
 
 async def _main() -> None:
     import klick.jobs_handlers  # noqa: F401, PLC0415
+    from klick.models import load_all_models  # noqa: PLC0415
+
+    load_all_models()
     from klick.core.queue import DramatiqDispatcher, setup_broker  # noqa: PLC0415
 
     settings = get_settings()

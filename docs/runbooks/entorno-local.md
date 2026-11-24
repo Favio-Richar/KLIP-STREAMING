@@ -57,6 +57,18 @@ ffmpeg -re -f lavfi -i testsrc2=size=1280x720:rate=30 -f lavfi -i sine=frequency
   -c:v libx264 -preset veryfast -g 60 -c:a aac -f flv rtmp://localhost:1935/live/<clave_de_ingesta>
 ```
 
+## Medios: análisis, derivados y pruebas (F1-04)
+- Tras subir un archivo, el job `media.probe` (cola `media`) lo analiza **por contenido** con FFmpeg y genera
+  `proxy_720p`, `thumbnail`, `sprite`, `waveform` y `audio_16k`. Mientras tanto el asset está en «Procesando».
+  Requiere `pnpm worker:dev` (levanta `worker-media`); sin él los archivos quedan en «Procesando».
+- `worker-media` corre en una red **sin salida a internet** (solo alcanza PostgreSQL, Redis y MinIO), con
+  límites de memoria/CPU/procesos, sin privilegios y con un volumen de trabajo propio (`klick_media_scratch`)
+  que cada job vacía al terminar.
+- FFmpeg solo existe en la imagen `worker-media`. Las pruebas que lo usan corren allí: `pnpm test:media`
+  (requiere `pnpm infra:up`). Las demás pruebas de medios corren en cualquier máquina.
+- E2E con el worker real: `E2E_MEDIA_WORKER=1 pnpm test:e2e`. Reapunta `worker-media` al bucket
+  `klick-e2e` durante la prueba y lo devuelve a su configuración normal al terminar.
+
 ## Observabilidad (F0-16)
 - **Métricas:** la API expone `GET /metrics` (formato Prometheus). Peticiones por plantilla de ruta (nunca la URL real), latencias, y jobs por tipo y estado como agregados globales: no incluye organizaciones ni usuarios. En desarrollo está abierto; en producción exige `Authorization: Bearer $METRICS_TOKEN` y, si el token está vacío, devuelve 404.
 - **Panel:** `pnpm obs:up` levanta Prometheus (`http://localhost:9090`) y Grafana (`http://localhost:3001`, usuario `admin`, clave `GRAFANA_ADMIN_PASSWORD`). El panel «Klick · Jobs y API» ya viene cargado. Si la API no corre en el 8000, define `OBS_API_TARGET=host.docker.internal:<puerto>` antes de levantarlo. `pnpm obs:down` lo detiene.
@@ -81,6 +93,7 @@ Verificada el 2026-11-24 clonando el repositorio (solo lo versionado) en una car
 
 Notas para quien repita la verificación:
 - En Windows con Git Bash, antepón `MSYS_NO_PATHCONV=1` a los `docker exec` que usan rutas como `/tmp`.
+- Next solo permite un servidor de desarrollo por carpeta: `pnpm test:e2e` (web en 3100) no puede correr a la vez que `pnpm web:dev`. Si tras matar un servidor Next la web responde 404, borra `apps/web/.next` (es una caché generada).
 - Si el puerto 8000 está ocupado por otro servicio, levanta la API en otro puerto y ajusta `PUBLIC_API_URL`, `JWT_ISSUER`, `MCP_PUBLIC_URL` y `KLICK_API_URL` (el web reescribe `/api/*` hacia esa URL). Las pruebas E2E usan 8010 (API) y 3100 (web), y exigen que estén libres.
 - Para repetir esto sin tocar tus datos, usa `COMPOSE_PROJECT_NAME` y puertos distintos en el `.env` del clon.
 

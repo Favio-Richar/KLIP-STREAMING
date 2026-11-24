@@ -39,7 +39,7 @@ ignore = ["E501"]  # el formateador acota el código; las cadenas largas son ace
 [tool.ruff.lint.per-file-ignores]
 "scripts/gen-progress.py" = ["E501", "E701", "E702", "E741"]
 "services/api/alembic/**" = ["E501", "S608", "S105"]
-"**/tests/**" = ["S101", "S105", "S106", "S608", "E501"]
+"**/tests/**" = ["S101", "S105", "S106", "S608", "E501", "ASYNC240"]
 # Las pruebas de imagen invocan `docker` (herramienta fija, argumentos propios, sin entrada externa).
 "tests/media/**" = ["S603", "S607"]
 
@@ -52,6 +52,7 @@ asyncio_default_test_loop_scope = "function"
 markers = [
   "db: requiere PostgreSQL (pnpm infra:up)",
   "docker: construye y ejecuta imágenes con Docker",
+  "ffmpeg: usa los binarios reales de FFmpeg (corren en la imagen worker-media: pnpm test:media)",
 ]
 
 [tool.mypy]

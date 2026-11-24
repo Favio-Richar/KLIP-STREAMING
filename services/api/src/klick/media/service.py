@@ -17,6 +17,7 @@ from klick.core.audit import record_audit
 from klick.core.db import Database
 from klick.core.errors import ApiError
 from klick.core.ids import new_id
+from klick.core.jobs import JobService
 from klick.core.outbox import emit
 from klick.media.models import (
     ASSET_KINDS,
@@ -95,9 +96,12 @@ class Page[T]:
 
 
 class MediaService:
-    def __init__(self, db: Database, storage: StorageService) -> None:
+    def __init__(
+        self, db: Database, storage: StorageService, jobs: JobService | None = None
+    ) -> None:
         self._db = db
         self._storage = storage
+        self._jobs = jobs
 
     # --------------------------------------------------------------------------- auditoría
 
@@ -689,6 +693,51 @@ class MediaService:
             await self._record(
                 s, principal, "asset.deleted", "asset", asset_id, event="asset.deleted"
             )
+
+    async def enqueue_probe(
+        self,
+        org_id: uuid.UUID,
+        asset_id: uuid.UUID,
+        *,
+        round_key: str,
+        created_by: uuid.UUID | None = None,
+        created_by_type: Literal["user", "api_token", "mcp", "system"] = "system",
+    ) -> None:
+        """Encola el análisis del asset. ``round_key`` distingue las rondas de procesamiento: el
+        mismo ``(asset, round_key)`` nunca crea dos jobs (idempotente ante reintentos)."""
+        if self._jobs is None:
+            raise RuntimeError("MediaService se creó sin JobService")
+        async with self._db.tenant_session(org_id, created_by) as s:
+            job, created = await self._jobs.enqueue(
+                s,
+                kind="media.probe",
+                payload={"asset_id": str(asset_id)},
+                org_id=org_id,
+                created_by_type=created_by_type,
+                created_by=created_by,
+                idempotency_key=f"probe:{asset_id}:{round_key}",
+            )
+        if created:
+            await self._jobs.dispatch(job)  # si Redis falla, el reconciliador reenvía el job
+
+    async def reprocess_asset(self, principal: Principal, asset_id: uuid.UUID) -> AssetView:
+        """Vuelve a analizar un asset ``failed`` o ``ready`` (p. ej. tras un fallo transitorio)."""
+        async with self._db.tenant_session(principal.org_id, principal.user_id) as s:
+            current = await self._asset(s, principal.org_id, asset_id)
+            if current.status not in ("failed", "ready"):
+                raise _conflict("asset_busy", "El archivo todavía se está procesando.")
+            await self._record(
+                s, principal, "asset.reprocess", "asset", asset_id, diff={"from": current.status}
+            )
+        await self.transition_asset(principal.org_id, asset_id, "processing")
+        await self.enqueue_probe(
+            principal.org_id,
+            asset_id,
+            round_key=str(new_id()),
+            created_by=principal.user_id,
+            created_by_type=_actor_type(principal),
+        )
+        return await self.get_asset(principal.org_id, asset_id)
 
     async def find_ready_asset_by_object(
         self, org_id: uuid.UUID, storage_object_id: uuid.UUID

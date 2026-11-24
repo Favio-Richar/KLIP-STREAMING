@@ -419,6 +419,17 @@ async def delete_asset(asset_id: uuid.UUID, principal: CurrentPrincipal, media: 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+@assets_router.post(
+    "/{asset_id}/reprocess", status_code=status.HTTP_202_ACCEPTED, response_model=AssetOut
+)
+async def reprocess_asset(
+    asset_id: uuid.UUID, principal: CurrentPrincipal, media: Media
+) -> AssetOut:
+    """Vuelve a analizar el archivo y regenerar sus derivados (para un asset fallido o listo)."""
+    principal.require(WRITE)
+    return AssetOut.of(await media.reprocess_asset(principal, asset_id))
+
+
 @assets_router.get("/{asset_id}/derivatives", response_model=list[DerivativeOut])
 async def list_derivatives(asset_id: uuid.UUID, principal: CurrentPrincipal, media: Media) -> Any:
     principal.require(READ)

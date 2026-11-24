@@ -103,6 +103,23 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm test:js
 
+  # Pruebas con FFmpeg real, dentro de la imagen worker-media (la misma que corre en producción).
+  media:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: cp .env.example .env
+      - run: docker compose --profile core up -d --wait postgres redis minio
+      - name: Pruebas de FFmpeg y del job media.probe
+        run: node scripts/test-media.mjs
+      - name: Logs si falla
+        if: failure()
+        run: docker compose --profile core logs --no-color --tail=200
+
   # Escritorio (Tauri): se compila y prueba en Windows, que es donde se distribuye.
   desktop:
     runs-on: windows-latest

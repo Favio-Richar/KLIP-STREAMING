@@ -63,6 +63,12 @@ docker compose -f docker-compose.yml -f infra/compose/workers.yml restart schedu
 ```
 Si la cola no baja y el scheduler está bien, revisa los workers de esa cola (`default`, `media`, `ai`, `publish`) con `logs worker-<cola>` y reinícialos. Reiniciar un worker **no pierde trabajo**: el job en curso se reencola por falta de latido.
 
+**Archivos que se quedan en «Procesando»:** comprueba que `worker-media` está arriba
+(`docker logs klick-worker-media-1`) y mira el job: `select status, attempts, error from jobs where kind = 'media.probe' order by created_at desc limit 5`.
+Un contenido inválido termina en «Con error» con un código estable (`invalid_media`, `too_long`, `too_large_dimensions`...) y no se reintenta;
+un fallo transitorio (almacén caído, disco de trabajo lleno) se reintenta 3 veces y después deja el asset en `failed` con `processing_failed`.
+Para reintentar: `POST /api/v1/assets/{id}/reprocess`. Si el volumen de trabajo se llena, un job por vez libera su espacio al terminar.
+
 Cancelar un job desde la API: `POST /api/v1/jobs/{id}/cancel` (permiso `org:manage`). No edites `jobs.status` a mano salvo que el reconciliador esté inoperante, y en ese caso anótalo.
 
 ## 4. Redis caído

@@ -9,6 +9,7 @@ x-klick-env: &klick-env
   DATABASE_URL_SYSTEM: postgresql+asyncpg://klick_system:${KLICK_SYSTEM_PASSWORD:-klick_system_dev_password}@postgres:5432/${POSTGRES_DB:-klick}
   REDIS_URL: redis://redis:6379/0
   S3_ENDPOINT: http://minio:9000
+  S3_BUCKET: ${S3_BUCKET:-klick}
   APP_SECRET_KEY: ${APP_SECRET_KEY:-change-me-dev-only}
   ENCRYPTION_MASTER_KEY: ${ENCRYPTION_MASTER_KEY:-change-me-dev-only-32-bytes-base64}
 
@@ -42,9 +43,23 @@ services:
       dockerfile: infra/docker/api.Dockerfile
       target: media
     image: klick-media:dev
+    networks: [media]
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
-    tmpfs: ["/tmp:size=4g"]
+    mem_limit: 4g
+    cpus: 2
+    pids_limit: 256
+    ulimits:
+      core: 0
+      nofile: 1024
+    tmpfs: ["/tmp:size=1g"]
+    # Los originales (hasta 20 GB) no caben en tmpfs: el área de trabajo es un volumen propio
+    # que cada job vacía al terminar.
+    volumes:
+      - klick_media_scratch:/work
+    environment:
+      <<: *klick-env
+      MEDIA_SCRATCH_DIR: /work
     command:
       ["dramatiq", "klick.worker_main", "--queues", "media", "--processes", "1", "--threads", "2"]
 
@@ -63,3 +78,6 @@ services:
   scheduler:
     <<: *klick-worker
     command: ["python", "-m", "klick.core.scheduler"]
+
+volumes:
+  klick_media_scratch:

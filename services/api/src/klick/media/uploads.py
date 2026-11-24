@@ -394,7 +394,9 @@ class UploadService:
             )
 
         await self._storage.mark_ready(org_id, upload.storage_object_id)
-        await self._media.transition_asset(org_id, upload.asset_id, "processing")
+        current = (await self._media.get_asset(org_id, upload.asset_id)).asset
+        if current.status == "uploading":  # un reintento tras una caída ya lo movió
+            await self._media.transition_asset(org_id, upload.asset_id, "processing")
         await self._media.transition_upload(org_id, upload_id, "completed")
         async with self._db.tenant_session(org_id, principal.user_id) as s:
             await record_audit(
@@ -415,6 +417,14 @@ class UploadService:
                 aggregate_id=upload.asset_id,
                 payload={"id": str(upload.asset_id), "status": "processing"},
             )
+        # el análisis (F1-04): idempotente por asset, así que un reintento de `complete` no duplica
+        await self._media.enqueue_probe(
+            org_id,
+            upload.asset_id,
+            round_key="upload",
+            created_by=principal.user_id,
+            created_by_type=_actor_type(principal),
+        )
         return await self._media.get_asset(org_id, upload.asset_id)
 
     async def _reject_mismatch(

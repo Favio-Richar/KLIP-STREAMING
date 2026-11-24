@@ -43,6 +43,17 @@ USER root
 COPY --from=ffmpeg /ffmpeg /usr/local/bin/ffmpeg
 COPY --from=ffmpeg /ffprobe /usr/local/bin/ffprobe
 # libass necesita fontconfig y al menos una fuente del sistema para subtítulos quemados.
-RUN apt-get update     && apt-get install -y --no-install-recommends fontconfig fonts-dejavu-core     && rm -rf /var/lib/apt/lists/*     && fc-cache -f
+RUN apt-get update     && apt-get install -y --no-install-recommends fontconfig fonts-dejavu-core     && rm -rf /var/lib/apt/lists/*     && fc-cache -f     && mkdir -p /work && chown klick /work
 ENV KLICK_FFMPEG_VERSION=7.1.1
 USER klick
+
+# ----------------------------------------------------------------------------- media-test
+# Solo para pruebas: la imagen media + dependencias de desarrollo + las pruebas. Ejecuta las
+# pruebas con FFmpeg real (`pnpm test:media`); FFmpeg no existe fuera de esta imagen.
+FROM media AS media-test
+USER root
+RUN uv sync --frozen --all-packages
+COPY --chown=klick services/api/tests services/api/tests
+USER klick
+ENV KLICK_REQUIRE_FFMPEG=1
+CMD ["pytest", "services/api/tests/test_media_ffmpeg.py", "services/api/tests/test_media_probe.py", "-q", "-p", "no:cacheprovider"]

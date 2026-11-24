@@ -26,6 +26,8 @@ const apiEnv = {
 
 export default defineConfig({
   testDir: "./specs",
+  // Levanta worker-media (bucket de pruebas) cuando se pide; ver support/media-worker.ts
+  globalSetup: "./support/media-worker.ts",
   outputDir: join(root, "test-results"),
   fullyParallel: false, // comparten un único servidor y base de datos
   workers: 1,

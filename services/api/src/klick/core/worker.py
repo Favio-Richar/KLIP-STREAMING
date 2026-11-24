@@ -65,6 +65,14 @@ class JobContext:
         self.attempt = job.attempts
         self.worker_id = deps.worker_id
 
+    @property
+    def db(self) -> Database:
+        return self._deps.db
+
+    @property
+    def settings(self) -> Settings:
+        return self._deps.settings
+
     def _session(self) -> Any:
         return _session(self._deps.db, self.org_id)
 
