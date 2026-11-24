@@ -103,6 +103,27 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm test:js
 
+  # Escritorio (Tauri): se compila y prueba en Windows, que es donde se distribuye.
+  desktop:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: rustup component add clippy rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+      - name: Clippy y formato
+        run: pnpm --filter desktop lint:rust
+      - name: Pruebas de navegación y enlaces
+        run: pnpm --filter desktop test:rust
+
   # Playwright de humo: flujo F0 completo, accesibilidad, diseño y PWA.
   e2e:
     runs-on: ubuntu-latest

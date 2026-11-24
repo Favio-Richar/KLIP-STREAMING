@@ -18,6 +18,8 @@
     "web:dev": "node scripts/task.mjs apps/web/package.json -- pnpm --filter web dev",
     "desktop:dev": "node scripts/task.mjs apps/desktop/package.json -- pnpm --filter desktop dev",
     "test": "pnpm test:py && pnpm test:js && pnpm test:scripts",
+    "test:desktop": "node scripts/task.mjs apps/desktop/src-tauri/Cargo.toml -- pnpm --filter desktop test:rust",
+    "lint:desktop": "node scripts/task.mjs apps/desktop/src-tauri/Cargo.toml -- pnpm --filter desktop lint:rust",
     "test:scripts": "node --test scripts/check-design-rules.test.mjs",
     "test:py": "uv run pytest",
     "test:js": "turbo run test",

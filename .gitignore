@@ -37,3 +37,7 @@ Thumbs.db
 .e2e/
 test-results/
 playwright-report/
+# Iconos móviles que genera `tauri icon` y que no usamos
+apps/desktop/src-tauri/icons/android/
+apps/desktop/src-tauri/icons/ios/
+apps/desktop/src-tauri/gen/
