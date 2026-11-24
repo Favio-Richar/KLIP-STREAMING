@@ -20,7 +20,7 @@ Formato: `- [ ] ID título` → `- [x] ID título — AAAA-MM-DD — resultado`
 - [x] F0-12 Almacenamiento — 2026-11-23 — StorageBackend S3 (multipart, URLs firmadas con ruta y content-type ligados), storage_objects con RLS y ref_count, recolector de huérfanos en el scheduler; 227 pruebas
 - [x] F0-13 Interfaz base — 2026-11-24 — Next.js + tokens/temas + next-intl, acceso/MFA/organización/miembros/perfil, cliente OpenAPI, PWA, reglas de diseño y contraste; 227 pytest, 56 Vitest, 20 Playwright
 - [ ] F0-14 Cascarón de escritorio
-- [ ] F0-15 Integración continua
+- [x] F0-15 Integración continua — 2026-11-24 — .github/workflows/ci.yml (static+gitleaks, audit pip/pnpm, pytest con servicios, Vitest, Playwright de humo); cada paso verificado en local, falta primera ejecución en GitHub (sin remoto configurado)
 - [ ] F0-16 Observabilidad base
 - [ ] F0-17 Documentación operativa
 - [ ] F0-ACEPTACION prueba de aceptación de la fase

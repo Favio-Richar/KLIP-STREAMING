@@ -1,0 +1,141 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  FORCE_COLOR: "1"
+  UV_FROZEN: "1"
+
+jobs:
+  # Secretos, formato y análisis estático: rápido y sin servicios.
+  static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: uv sync --all-packages
+      - run: pnpm install --frozen-lockfile
+      - name: Hooks (gitleaks, ruff, prettier)
+        run: uv run pre-commit run --all-files
+      - name: Lint Python (ruff + mypy)
+        run: pnpm lint:py
+      - name: Lint y tipos JS
+        run: pnpm lint:js
+      - name: Reglas de diseño
+        run: pnpm lint:design && pnpm test:scripts
+      - name: Cliente generado al día con la API
+        run: pnpm lint:contract
+
+  # Auditoría de dependencias.
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: uv sync --all-packages
+      - name: pip-audit (dependencias de ejecución)
+        run: |
+          uv export --frozen --package klick --no-emit-workspace --no-hashes --no-dev -o requirements-audit.txt
+          uv run pip-audit -r requirements-audit.txt --no-deps --disable-pip --strict
+      - run: pnpm install --frozen-lockfile
+      - name: pnpm audit
+        run: pnpm audit --prod --audit-level high
+
+  # pytest (unidad, integración, aislamiento RLS, IDOR) contra PostgreSQL, Redis y MinIO reales.
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --all-packages
+      - name: Variables de entorno
+        run: cp .env.example .env
+      - name: Infraestructura
+        run: docker compose --profile core up -d --wait postgres redis minio
+      - run: uv run --package klick alembic -c services/api/alembic.ini upgrade head
+      - run: uv run pytest -q
+      - name: Logs de infraestructura si falla
+        if: failure()
+        run: docker compose --profile core logs --no-color --tail=200
+
+  # Vitest de los paquetes y la aplicación web.
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:js
+
+  # Playwright de humo: flujo F0 completo, accesibilidad, diseño y PWA.
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [static]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: uv sync --all-packages
+      - run: pnpm install --frozen-lockfile
+      - run: cp .env.example .env
+      - run: docker compose --profile core up -d --wait postgres redis minio
+      - run: uv run --package klick alembic -c services/api/alembic.ini upgrade head
+      - run: uv run --package klick python -m klick.core.seed
+      - run: pnpm --dir tests/e2e exec playwright install chrome
+      - run: pnpm test:e2e
+        env:
+          CI: "true"
+      - name: Informe y trazas
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: |
+            tests/e2e/playwright-report
+            test-results
+            .e2e
+          if-no-files-found: ignore
+          retention-days: 7

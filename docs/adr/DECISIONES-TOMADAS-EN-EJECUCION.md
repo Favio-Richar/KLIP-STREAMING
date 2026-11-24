@@ -54,3 +54,4 @@ Una línea por decisión que no estaba en la documentación. Formato: `AAAA-MM-D
 2026-11-23 · F0-13 · E2E con el Chrome instalado (`channel: chrome`) y API en el puerto 8010, web en 3100 · evita descargar un navegador aparte y choques con otros servicios locales en 8000/3000
 2026-11-23 · F0-13 · pnpm: `@parcel/watcher` y `@swc/core` con scripts de build denegados (`allowBuilds: false`) · solo son respaldos de compilación; los binarios llegan precompilados
 2026-11-23 · F0-13 · Versión de ruff del hook de pre-commit alineada con la del proyecto (v0.17.6) · con versiones distintas el hook reformateaba archivos y luego `ruff format --check` fallaba (el espejo de prettier quedó congelado en v3.1.0)
+2026-11-24 · F0-15 · CI usa `pre-commit run --all-files` para gitleaks/ruff/prettier y `pip-audit` sobre `uv export --package klick` · una sola fuente de verdad con los hooks locales; `pip-audit` directo falla porque el paquete del workspace no está en PyPI
