@@ -195,6 +195,38 @@ async def _asset_tags(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: Ctx) -> 
     )
 
 
+async def _clip(conn: asyncpg.Connection, org_id: uuid.UUID) -> uuid.UUID:
+    new_id: uuid.UUID = await conn.fetchval(
+        "insert into clips (id, org_id, source_asset_id, title) "
+        "values (gen_random_uuid(), $1, $2, 'c') returning id",
+        org_id,
+        await _asset(conn, org_id),
+    )
+    return new_id
+
+
+async def _clips(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: Ctx) -> None:
+    await _clip(conn, org_id)
+
+
+async def _edit_projects(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: Ctx) -> None:
+    await conn.execute(
+        "insert into edit_projects (id, org_id, clip_id, schema_version, document) "
+        "values (gen_random_uuid(), $1, $2, '1.0', '{}'::jsonb)",
+        org_id,
+        await _clip(conn, org_id),
+    )
+
+
+async def _clip_versions(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: Ctx) -> None:
+    await conn.execute(
+        "insert into clip_versions (id, org_id, clip_id, version, schema_version, document) "
+        "values (gen_random_uuid(), $1, $2, 1, '1.0', '{}'::jsonb)",
+        org_id,
+        await _clip(conn, org_id),
+    )
+
+
 # tabla -> (tipo, columna que identifica la organización, fábrica)
 FACTORIES: dict[str, tuple[Kind, str, Factory]] = {
     "organizations": ("org_root", "id", _organizations),
@@ -213,6 +245,10 @@ FACTORIES: dict[str, tuple[Kind, str, Factory]] = {
     "media_derivatives": ("tenant", "org_id", _media_derivatives),
     "uploads": ("tenant", "org_id", _uploads),
     "asset_tags": ("tenant", "org_id", _asset_tags),
+    "clips": ("tenant", "org_id", _clips),
+    "edit_projects": ("tenant", "org_id", _edit_projects),
+    # Inmutable (trigger): la aplicación solo inserta y lee lo suyo; nunca UPDATE ni DELETE.
+    "clip_versions": ("append_only", "org_id", _clip_versions),
     # Append-only: la aplicación solo inserta y lee lo suyo; nunca UPDATE ni DELETE.
     "audit_events": ("append_only", "org_id", _audit_events),
 }

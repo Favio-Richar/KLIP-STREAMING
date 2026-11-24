@@ -33,7 +33,7 @@ Formato: `- [ ] ID título` → `- [x] ID título — AAAA-MM-DD — resultado`
 - [x] F1-04 Trabajo `media.probe` — 2026-11-24 — análisis por contenido con demuxer forzado y protocolos restringidos, hash verificado, 5 derivados, estados y errores estables, reproceso, red interna sin internet; 55 pruebas en la imagen real + E2E con worker (Procesando→Listo); corrigió un fallo real del worker (modelos)
 - [x] F1-05 Biblioteca — 2026-11-24 — cuadrícula/lista con miniaturas, búsqueda con retardo, filtros, carga progresiva, detalle con reproductor del proxy, renombrar, etiquetas, reanálisis y eliminación con confirmación; E2E real con worker
 - [x] F1-06 Esquema `EditProject` — 2026-11-24 — JSON Schema como fuente única, Pydantic y Zod generados (con comprobación en lint), validación en 3 capas, reglas semánticas en Python y TS probadas con 37 fixtures compartidos, marco de migraciones; 75 pytest + 45 Vitest
-- [ ] F1-07 Módulo `clips`
+- [x] F1-07 Módulo `clips` — 2026-11-24 — migración 0009 reversible (clips, edit_projects, clip_versions con RLS, FKs compuestas y versiones inmutables por trigger y permisos), creación desde un tramo, guardado con If-Match/ETag (412 verificado con carrera real), validación contra assets reales, versiones y API; 26 pruebas propias + arnés de seguridad ampliado
 - [ ] F1-08 Generador del grafo de render
 - [ ] F1-09 Worker de render
 - [ ] F1-10 Editor

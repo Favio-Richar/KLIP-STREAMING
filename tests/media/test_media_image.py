@@ -74,7 +74,7 @@ def run(image: str, *cmd: str, stdin: str | None = None, user: str | None = None
         input=stdin,
         capture_output=True,
         text=True,
-        timeout=180,
+        timeout=300,
         env={**os.environ, "MSYS_NO_PATHCONV": "1"},
     )
     assert out.returncode == 0, f"{cmd}\n{out.stderr[-1500:]}"

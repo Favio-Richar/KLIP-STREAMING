@@ -10,6 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from redis.asyncio import Redis
 
 import klick.jobs_handlers  # noqa: F401 - registra los kinds de job
+from klick.clips.router import clips_router
+from klick.clips.service import ClipService
 from klick.core.config import Settings, get_settings
 from klick.core.crypto import Crypto
 from klick.core.db import Database
@@ -88,6 +90,7 @@ def create_app(
         app.state.storage = storage
         app.state.storage_service = StorageService(db, storage, settings)
         app.state.media_service = MediaService(db, app.state.storage_service, app.state.job_service)
+        app.state.clip_service = ClipService(db, app.state.media_service)
         app.state.upload_service = UploadService(
             db, storage, app.state.storage_service, app.state.media_service, settings
         )
@@ -144,6 +147,7 @@ def create_app(
     api_router.include_router(tags_router)
     api_router.include_router(uploads_router)
     api_router.include_router(assets_router)
+    api_router.include_router(clips_router)
     api_router.include_router(jobs_router)
     api_router.include_router(events_router)
     app.include_router(api_router)

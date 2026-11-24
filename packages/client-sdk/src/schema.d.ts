@@ -417,6 +417,96 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/clips": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Clips */
+    get: operations["list_clips_api_v1_clips_get"];
+    put?: never;
+    /** Create Clip */
+    post: operations["create_clip_api_v1_clips_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/clips/{clip_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Clip */
+    get: operations["get_clip_api_v1_clips__clip_id__get"];
+    put?: never;
+    post?: never;
+    /** Delete Clip */
+    delete: operations["delete_clip_api_v1_clips__clip_id__delete"];
+    options?: never;
+    head?: never;
+    /** Update Clip */
+    patch: operations["update_clip_api_v1_clips__clip_id__patch"];
+    trace?: never;
+  };
+  "/api/v1/clips/{clip_id}/edit-project": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Edit Project */
+    get: operations["get_edit_project_api_v1_clips__clip_id__edit_project_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Update Edit Project */
+    patch: operations["update_edit_project_api_v1_clips__clip_id__edit_project_patch"];
+    trace?: never;
+  };
+  "/api/v1/clips/{clip_id}/versions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Versions */
+    get: operations["list_versions_api_v1_clips__clip_id__versions_get"];
+    put?: never;
+    /** Create Version */
+    post: operations["create_version_api_v1_clips__clip_id__versions_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/clips/{clip_id}/versions/{version}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Version */
+    get: operations["get_version_api_v1_clips__clip_id__versions__version__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/events/stream": {
     parameters: {
       query?: never;
@@ -925,6 +1015,74 @@ export interface components {
       /** Title */
       title?: string | null;
     };
+    /** ClipCreate */
+    ClipCreate: {
+      /**
+       * Aspect
+       * @default 9x16
+       * @enum {string}
+       */
+      aspect: "9x16" | "16x9" | "1x1" | "4x5";
+      /** End Ms */
+      end_ms: number;
+      /** Project Id */
+      project_id?: string | null;
+      /**
+       * Source Asset Id
+       * Format: uuid
+       */
+      source_asset_id: string;
+      /** Start Ms */
+      start_ms: number;
+      /** Title */
+      title?: string | null;
+    };
+    /** ClipOut */
+    ClipOut: {
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Current Version Id */
+      current_version_id: string | null;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Project Id */
+      project_id: string | null;
+      /** Revision */
+      revision: number | null;
+      /**
+       * Source Asset Id
+       * Format: uuid
+       */
+      source_asset_id: string;
+      /** Status */
+      status: string;
+      /** Title */
+      title: string;
+      /** Updated At */
+      updated_at: string | null;
+    };
+    /** ClipPage */
+    ClipPage: {
+      /** Items */
+      items: components["schemas"]["ClipOut"][];
+      /** Next Cursor */
+      next_cursor: string | null;
+    };
+    /** ClipUpdate */
+    ClipUpdate: {
+      /** Project Id */
+      project_id?: string | null;
+      /** Status */
+      status?: ("draft" | "archived") | null;
+      /** Title */
+      title?: string | null;
+    };
     /** DerivativeOut */
     DerivativeOut: {
       /**
@@ -950,6 +1108,31 @@ export interface components {
       expires_in: number;
       /** Url */
       url: string;
+    };
+    /** EditProjectOut */
+    EditProjectOut: {
+      /**
+       * Clip Id
+       * Format: uuid
+       */
+      clip_id: string;
+      /** Document */
+      document: {
+        [key: string]: unknown;
+      };
+      /** Revision */
+      revision: number;
+      /** Schema Version */
+      schema_version: string;
+      /** Updated At */
+      updated_at: string | null;
+    };
+    /** EditProjectUpdate */
+    EditProjectUpdate: {
+      /** Document */
+      document: {
+        [key: string]: unknown;
+      };
     };
     /** FolderCreate */
     FolderCreate: {
@@ -1547,6 +1730,60 @@ export interface components {
     VerifyEmailRequest: {
       /** Token */
       token: string;
+    };
+    /** VersionCreate */
+    VersionCreate: {
+      /** Label */
+      label?: string | null;
+    };
+    /** VersionDetail */
+    VersionDetail: {
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Document */
+      document: {
+        [key: string]: unknown;
+      };
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Label */
+      label: string | null;
+      /** Schema Version */
+      schema_version: string;
+      /** Version */
+      version: number;
+    };
+    /** VersionOut */
+    VersionOut: {
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Label */
+      label: string | null;
+      /** Schema Version */
+      schema_version: string;
+      /** Version */
+      version: number;
+    };
+    /** VersionPage */
+    VersionPage: {
+      /** Items */
+      items: components["schemas"]["VersionOut"][];
+      /** Next Before */
+      next_before: number | null;
     };
   };
   responses: never;
@@ -2345,6 +2582,339 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["AcceptedResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_clips_api_v1_clips_get: {
+    parameters: {
+      query?: {
+        limit?: number;
+        cursor?: string | null;
+        project_id?: string | null;
+        source_asset_id?: string | null;
+        status?: ("draft" | "ready" | "archived") | null;
+        q?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ClipPage"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  create_clip_api_v1_clips_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ClipCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ClipOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_clip_api_v1_clips__clip_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        clip_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ClipOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_clip_api_v1_clips__clip_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        clip_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  update_clip_api_v1_clips__clip_id__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        clip_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ClipUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ClipOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_edit_project_api_v1_clips__clip_id__edit_project_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        clip_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EditProjectOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  update_edit_project_api_v1_clips__clip_id__edit_project_patch: {
+    parameters: {
+      query?: never;
+      header?: {
+        "If-Match"?: string | null;
+      };
+      path: {
+        clip_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EditProjectUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EditProjectOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_versions_api_v1_clips__clip_id__versions_get: {
+    parameters: {
+      query?: {
+        limit?: number;
+        before?: number | null;
+      };
+      header?: never;
+      path: {
+        clip_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["VersionPage"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  create_version_api_v1_clips__clip_id__versions_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        clip_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["VersionCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["VersionOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_version_api_v1_clips__clip_id__versions__version__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        clip_id: string;
+        version: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["VersionDetail"];
         };
       };
       /** @description Validation Error */

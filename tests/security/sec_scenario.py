@@ -40,6 +40,7 @@ class Tenant:
     tag_id: str = ""
     asset_id: str = ""
     upload_id: str = ""
+    clip_id: str = ""
     extra: dict[str, Any] = field(default_factory=dict)
 
     def actor(self, role: str) -> Actor:
@@ -114,6 +115,15 @@ async def build_tenant(api: ApiHarness, users: Users, tag: str) -> Tenant:
         },
     )
     tenant.upload_id = upload.json()["upload"]["id"]
+    # clips (F1-07): un clip del video listo y una versión
+    clip = await owner.call(
+        "POST",
+        "/clips",
+        org=org["id"],
+        json={"source_asset_id": tenant.asset_id, "start_ms": 1000, "end_ms": 6000},
+    )
+    tenant.clip_id = clip.json()["id"]
+    await owner.call("POST", f"/clips/{tenant.clip_id}/versions", org=org["id"], json={})
     return tenant
 
 
@@ -129,12 +139,24 @@ def media_path_values(t: "Tenant") -> dict[str, str]:
         "tag_id": t.tag_id,
         "asset_id": t.asset_id,
         "upload_id": t.upload_id,
+        "clip_id": t.clip_id,
+        "version": "1",
         "kind": "thumbnail",  # parámetro de ruta de derivados
     }
 
 
 # Cuerpos válidos para las escrituras de medios (clave: método y plantilla relativa a /api/v1).
+def media_body(method: str, template: str, tenant: "Tenant") -> object:
+    """Cuerpo de una escritura de medios/clips; algunos dependen de los recursos de la organización."""
+    body = MEDIA_BODIES.get((method, template))
+    return body(tenant) if callable(body) else body
+
+
 MEDIA_BODIES: dict[tuple[str, str], object] = {
+    ("POST", "/clips"): lambda t: {"source_asset_id": t.asset_id, "start_ms": 0, "end_ms": 5000},
+    ("PATCH", "/clips/{clip_id}"): {"title": "pwn"},
+    ("PATCH", "/clips/{clip_id}/edit-project"): {"document": {}},
+    ("POST", "/clips/{clip_id}/versions"): {},
     ("POST", "/projects"): {"name": "pwn"},
     ("PATCH", "/projects/{project_id}"): {"name": "pwn"},
     ("POST", "/folders"): {"name": "pwn"},

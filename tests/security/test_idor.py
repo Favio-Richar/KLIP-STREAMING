@@ -118,6 +118,8 @@ async def test_foreign_organization_is_never_reachable(
         if policy.kind not in ("org_header", "org_path"):
             continue
         body = BODIES.get((method, template), {} if method in {"POST", "PATCH", "PUT"} else None)
+        if callable(body):  # cuerpos que dependen de los recursos de la organización A
+            body = body(a)
         if policy.streaming:
             body = None
         path = _path(template, a, ids)

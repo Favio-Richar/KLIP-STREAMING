@@ -15,7 +15,7 @@ from actors import BASE, Users
 from harness import ApiHarness
 from klick.orgs.permissions import ROLE_PERMISSIONS
 from sec_policy import POLICY, Policy
-from sec_scenario import MEDIA_BODIES, ROLE_ORDER, Tenant, build_tenant, media_path_values
+from sec_scenario import ROLE_ORDER, Tenant, build_tenant, media_body, media_path_values
 
 pytestmark = pytest.mark.db
 
@@ -52,9 +52,9 @@ def _request(method: str, template: str, t: Tenant) -> tuple[str, Any]:
         body = {"kind": "system.ping", "payload": {"steps": 1}}
     elif (method, template) == ("PATCH", f"{BASE}/orgs/{{org_id}}"):
         body = {"name": "Matrix Org"}
-    media_body = MEDIA_BODIES.get((method, template.removeprefix(BASE)))
-    if media_body is not None:
-        body = media_body
+    extra = media_body(method, template.removeprefix(BASE), t)
+    if extra is not None:
+        body = extra
     return path.removeprefix(BASE), body
 
 

@@ -687,8 +687,34 @@ class MediaService:
 
     async def delete_asset(self, principal: Principal, asset_id: uuid.UUID) -> None:
         """Borrado lógico: desaparece de la biblioteca; la retención lo elimina después."""
+        from klick.clips.models import Clip, EditProjectRow  # noqa: PLC0415 - evita un ciclo
+
         async with self._db.tenant_session(principal.org_id, principal.user_id) as s:
             asset = await self._asset(s, principal.org_id, asset_id, lock=True)
+            # clips hechos con este video O cuyo documento de edición lo usa como cualquier fuente
+            # (otro video, música, imagen): borrarlo dejaría al clip con una referencia rota
+            in_use = (
+                await s.execute(
+                    select(func.count(func.distinct(Clip.id)))
+                    .select_from(Clip)
+                    .join(EditProjectRow, EditProjectRow.clip_id == Clip.id)
+                    .where(
+                        Clip.org_id == principal.org_id,
+                        Clip.deleted_at.is_(None),
+                        or_(
+                            Clip.source_asset_id == asset_id,
+                            EditProjectRow.document.contains(
+                                {"sources": [{"asset_id": str(asset_id)}]}
+                            ),
+                        ),
+                    )
+                )
+            ).scalar_one()
+            if in_use:
+                raise _conflict(
+                    "asset_in_use",
+                    f"Hay {in_use} clip(s) hechos con este archivo. Elimínalos primero.",
+                )
             asset.deleted_at = datetime.now(UTC)
             await self._record(
                 s, principal, "asset.deleted", "asset", asset_id, event="asset.deleted"
@@ -738,6 +764,24 @@ class MediaService:
             created_by_type=_actor_type(principal),
         )
         return await self.get_asset(principal.org_id, asset_id)
+
+    async def assets_by_ids(
+        self, org_id: uuid.UUID, ids: set[uuid.UUID]
+    ) -> dict[uuid.UUID, MediaAsset]:
+        """Assets vivos de la organización con esos identificadores (los ajenos no aparecen)."""
+        if not ids:
+            return {}
+        async with self._db.tenant_session(org_id) as s:
+            rows = (
+                await s.execute(
+                    select(MediaAsset).where(
+                        MediaAsset.org_id == org_id,
+                        MediaAsset.id.in_(ids),
+                        MediaAsset.deleted_at.is_(None),
+                    )
+                )
+            ).scalars()
+            return {a.id: a for a in rows}
 
     async def find_ready_asset_by_object(
         self, org_id: uuid.UUID, storage_object_id: uuid.UUID

@@ -41,7 +41,7 @@ Formato: `MÉTODO ruta` — permiso requerido. Todas las rutas aplican RLS y `se
 `POST /assets/{id}/highlights/detect` (job), `GET /assets/{id}/highlights`, `PATCH /highlights/{id}` (aceptar/rechazar/calificar), `POST /highlights/{id}/to-clip` — `ai:run`, `clips:write`.
 
 **Clips y render (`clips`, `render`)**
-`GET/POST /clips`, `GET/PATCH/DELETE /clips/{id}`, `GET/PATCH /clips/{id}/edit-project` (`If-Match`), `GET /clips/{id}/versions`, `POST /clips/{id}/versions`, `POST /clips/{id}/render` (job), `GET /render-jobs/{id}`, `POST /render-jobs/{id}/cancel`, `GET /render-presets`, `GET/POST/PATCH /captions`, `POST /clips/{id}/captions/generate` — `clips:read|write`.
+`GET/POST /clips`, `GET/PATCH/DELETE /clips/{id}`, `GET/PATCH /clips/{id}/edit-project` (`If-Match`), `GET /clips/{id}/versions`, `POST /clips/{id}/versions`, `GET /clips/{id}/versions/{n}` (con el documento congelado), `POST /clips/{id}/render` (job), `GET /render-jobs/{id}`, `POST /render-jobs/{id}/cancel`, `GET /render-presets`, `GET/POST/PATCH /captions`, `POST /clips/{id}/captions/generate` — `clips:read|write`.
 
 **Plantillas y marca**
 `GET/POST/PATCH/DELETE /templates`, `POST /clips/{id}/apply-template`, `GET/POST/PATCH /brand-kits` — `templates:read|write`.
