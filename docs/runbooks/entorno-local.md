@@ -57,6 +57,12 @@ ffmpeg -re -f lavfi -i testsrc2=size=1280x720:rate=30 -f lavfi -i sine=frequency
   -c:v libx264 -preset veryfast -g 60 -c:a aac -f flv rtmp://localhost:1935/live/<clave_de_ingesta>
 ```
 
+## Observabilidad (F0-16)
+- **Métricas:** la API expone `GET /metrics` (formato Prometheus). Peticiones por plantilla de ruta (nunca la URL real), latencias, y jobs por tipo y estado como agregados globales: no incluye organizaciones ni usuarios. En desarrollo está abierto; en producción exige `Authorization: Bearer $METRICS_TOKEN` y, si el token está vacío, devuelve 404.
+- **Panel:** `pnpm obs:up` levanta Prometheus (`http://localhost:9090`) y Grafana (`http://localhost:3001`, usuario `admin`, clave `GRAFANA_ADMIN_PASSWORD`). El panel «Klick · Jobs y API» ya viene cargado. Si la API no corre en el 8000, define `OBS_API_TARGET=host.docker.internal:<puerto>` antes de levantarlo. `pnpm obs:down` lo detiene.
+- **Trazas:** con `OTEL_EXPORTER_OTLP_ENDPOINT` definido, la API exporta trazas OpenTelemetry (HTTP/OTLP) y los logs incluyen `trace_id` y `span_id`. Sin endpoint no se exporta nada.
+- **Qué mirar primero:** `klick_jobs_oldest_queued_age_seconds` creciendo = workers caídos o saturados; `klick_jobs{status="failed"}` subiendo = revisar `jobs.error`; `klick_jobs_scrape_ok == 0` = la API no llega a PostgreSQL.
+
 ## Rendimiento en Windows
 - El código de Python que se recarga en caliente corre en contenedor con montaje de la carpeta; si la recarga es lenta, usar `watchfiles` con sondeo.
 - `node_modules` y `.venv` se instalan nativos en Windows (no dentro de contenedores) y se excluyen de los montajes.

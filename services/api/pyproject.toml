@@ -22,6 +22,10 @@ dependencies = [
   "tzdata>=2024.2",
   "dramatiq[redis]>=1.17",
   "boto3>=1.35",
+  "prometheus-client>=0.21",
+  "opentelemetry-sdk>=1.28",
+  "opentelemetry-exporter-otlp-proto-http>=1.28",
+  "opentelemetry-instrumentation-fastapi>=0.49b0",
 ]
 
 [build-system]

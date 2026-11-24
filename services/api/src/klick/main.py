@@ -23,6 +23,8 @@ from klick.core.logging import configure_logging
 from klick.core.middleware import REQUEST_ID_HEADER, RequestIdMiddleware
 from klick.core.queue import DramatiqDispatcher, setup_broker
 from klick.core.ratelimit import RateLimiter
+from klick.core.telemetry import Metrics, MetricsMiddleware, setup_tracing
+from klick.core.telemetry import router as metrics_router
 from klick.identity.mfa import MfaService
 from klick.identity.oidc import OidcProvider, OidcService, build_oidc_provider
 from klick.identity.router import auth_router, me_router
@@ -84,6 +86,8 @@ def create_app(
         register_readiness_check(app, "db", db.ping)
         register_readiness_check(app, "redis", redis.ping)  # type: ignore[arg-type]
         yield
+        if stop_tracing is not None:
+            stop_tracing()
         await redis.aclose()
         await db.dispose()
 
@@ -97,6 +101,8 @@ def create_app(
     )
     app.state.settings = settings
     app.state.readiness_checks = {}
+    app.state.metrics = metrics = Metrics()
+    stop_tracing = app.state.stop_tracing = setup_tracing(app, settings)
 
     # El último añadido es el más externo: RequestId envuelve a CORS y a todo lo demás.
     app.add_middleware(
@@ -108,9 +114,11 @@ def create_app(
         expose_headers=[REQUEST_ID_HEADER, "Retry-After", "ETag"],
     )
     app.add_middleware(RequestIdMiddleware)
+    app.add_middleware(MetricsMiddleware, metrics=metrics)
     register_error_handlers(app)
 
     app.include_router(health_router)
+    app.include_router(metrics_router)
     api_router = APIRouter(prefix=API_PREFIX)
     api_router.include_router(auth_router)
     api_router.include_router(me_router)

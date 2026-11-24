@@ -9,6 +9,8 @@
   "scripts": {
     "infra:up": "docker compose --profile core up -d --wait",
     "infra:down": "docker compose --profile core down",
+    "obs:up": "docker compose --profile observability up -d --wait prometheus grafana",
+    "obs:down": "docker compose --profile observability stop prometheus grafana",
     "db:migrate": "node scripts/task.mjs services/api/alembic.ini -- uv run --package klick alembic -c services/api/alembic.ini upgrade head",
     "db:seed": "node scripts/task.mjs services/api/src/klick/core/seed.py -- uv run --package klick python -m klick.core.seed",
     "api:dev": "node scripts/task.mjs services/api/src/klick/main.py -- uv run --package klick uvicorn klick.main:app --reload --port 8000",

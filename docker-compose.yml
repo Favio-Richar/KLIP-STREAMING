@@ -63,7 +63,54 @@ services:
       <<: *hc
       test: ["CMD", "/mediamtx", "--version"]
 
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    profiles: ["observability"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      API_TARGET: ${OBS_API_TARGET:-host.docker.internal:8000}
+    volumes:
+      - ./infra/observability/prometheus.tmpl.yml:/etc/prometheus/prometheus.tmpl.yml:ro
+      - klick_promdata:/prometheus
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        sed "s|__API_TARGET__|$${API_TARGET}|" /etc/prometheus/prometheus.tmpl.yml > /tmp/prometheus.yml &&
+        exec /bin/prometheus --config.file=/tmp/prometheus.yml --storage.tsdb.path=/prometheus
+        --storage.tsdb.retention.time=15d
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    healthcheck:
+      <<: *hc
+      test: ["CMD", "wget", "-qO-", "http://localhost:9090/-/ready"]
+
+  grafana:
+    image: grafana/grafana:12.2.0
+    profiles: ["observability"]
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-klick_grafana_dev}
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_USERS_DEFAULT_THEME: dark
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    volumes:
+      - ./infra/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - klick_grafanadata:/var/lib/grafana
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    healthcheck:
+      <<: *hc
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health | grep -q ok"]
+
 volumes:
   klick_pgdata:
   klick_redisdata:
   klick_miniodata:
+  klick_promdata:
+  klick_grafanadata:

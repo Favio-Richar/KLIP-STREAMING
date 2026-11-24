@@ -1,0 +1,114 @@
+{
+  "uid": "klick-jobs",
+  "title": "Klick · Jobs y API",
+  "tags": ["klick"],
+  "timezone": "browser",
+  "schemaVersion": 41,
+  "version": 1,
+  "refresh": "15s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Jobs en cola",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 5 },
+      "datasource": { "type": "prometheus", "uid": "klick-prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum(klick_jobs{status=\"queued\"}) or vector(0)" }]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Jobs en ejecución",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 5 },
+      "datasource": { "type": "prometheus", "uid": "klick-prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum(klick_jobs{status=\"running\"}) or vector(0)" }]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Jobs fallidos",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 5 },
+      "datasource": { "type": "prometheus", "uid": "klick-prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum(klick_jobs{status=\"failed\"}) or vector(0)" }]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Job en cola más antiguo",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 5 },
+      "datasource": { "type": "prometheus", "uid": "klick-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [{ "refId": "A", "expr": "klick_jobs_oldest_queued_age_seconds" }]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Jobs por estado",
+      "gridPos": { "x": 0, "y": 5, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "klick-prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "sum by (status) (klick_jobs)", "legendFormat": "{{status}}" }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Jobs por tipo",
+      "gridPos": { "x": 12, "y": 5, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "klick-prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (kind) (klick_jobs{status=~\"queued|running\"})",
+          "legendFormat": "{{kind}}"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Peticiones por segundo",
+      "gridPos": { "x": 0, "y": 13, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "klick-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (status) (rate(klick_http_requests_total[5m]))",
+          "legendFormat": "{{status}}"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Latencia p95 por ruta",
+      "gridPos": { "x": 8, "y": 13, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "klick-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le, route) (rate(klick_http_request_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{route}}"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Errores 5xx por segundo",
+      "gridPos": { "x": 16, "y": 13, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "klick-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (route) (rate(klick_http_requests_total{status=~\"5..\"}[5m]))",
+          "legendFormat": "{{route}}"
+        }
+      ]
+    }
+  ]
+}

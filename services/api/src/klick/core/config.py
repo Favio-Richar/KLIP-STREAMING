@@ -64,6 +64,12 @@ class Settings(BaseSettings):
     google_oauth_client_id: str = ""
     google_oauth_client_secret: SecretStr = SecretStr("")
 
+    # Observabilidad (F0-16). Sin endpoint OTLP no se exportan trazas.
+    otel_exporter_otlp_endpoint: str = ""
+    otel_service_name: str = "klick-api"
+    # En producción /metrics exige `Authorization: Bearer <token>`; sin token queda deshabilitado.
+    metrics_token: SecretStr = SecretStr("")
+
     cors_allow_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
     feature_fake_adapters: bool = True
 

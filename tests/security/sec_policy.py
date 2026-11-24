@@ -30,6 +30,7 @@ POLICY: dict[tuple[str, str], Policy] = {
     # --- públicos ---------------------------------------------------------------------------
     ("GET", "/healthz"): Policy("public"),
     ("GET", "/readyz"): Policy("public"),
+    ("GET", "/metrics"): Policy("public"),  # en producción exige token de métricas
     ("POST", _p("/auth/register")): Policy("public"),
     ("POST", _p("/auth/email/verify")): Policy("public"),
     ("POST", _p("/auth/login")): Policy("public"),

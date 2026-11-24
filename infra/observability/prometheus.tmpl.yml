@@ -1,0 +1,14 @@
+# Plantilla: el contenedor reemplaza __API_TARGET__ al arrancar (ver docker-compose.yml).
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: klick-api
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["__API_TARGET__"]
+    # En producción /metrics exige token: montar el archivo y descomentar.
+    # authorization:
+    #   type: Bearer
+    #   credentials_file: /etc/prometheus/metrics_token
