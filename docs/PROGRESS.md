@@ -17,7 +17,7 @@ Formato: `- [ ] ID título` → `- [x] ID título — AAAA-MM-DD — resultado`
 - [x] F0-09 Organizaciones y RBAC — 2026-11-22 — organizaciones, roles de sistema sembrados, membresías, invitaciones, tokens de API, Principal y X-Org-ID con RLS; 105 pruebas
 - [x] F0-10 Pruebas de aislamiento — 2026-11-22 — batería RLS genérica por tabla, arnés IDOR y matriz rol × endpoint auto-descubiertos; validadas con mutación; 126 pruebas
 - [x] F0-11 Núcleo de ejecución — 2026-11-22 — jobs, worker con latido/progreso/reintentos, reconciliador, scheduler, outbox→Redis Streams, idempotencia, auditoría append-only particionada, SSE y system.ping verificado de extremo a extremo en Docker; 195 pruebas
-- [ ] F0-12 Almacenamiento
+- [x] F0-12 Almacenamiento — 2026-11-23 — StorageBackend S3 (multipart, URLs firmadas con ruta y content-type ligados), storage_objects con RLS y ref_count, recolector de huérfanos en el scheduler; 227 pruebas
 - [ ] F0-13 Interfaz base
 - [ ] F0-14 Cascarón de escritorio
 - [ ] F0-15 Integración continua

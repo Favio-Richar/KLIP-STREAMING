@@ -103,6 +103,15 @@ async def _audit_events(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: Ctx) -
     )
 
 
+async def _storage_objects(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: Ctx) -> None:
+    await conn.execute(
+        "insert into storage_objects (id, org_id, bucket, key) "
+        "values (gen_random_uuid(), $1::uuid, 'b', 'org/' || $1::uuid::text || '/o/' || $2::text)",
+        org_id,
+        secrets.token_hex(6),
+    )
+
+
 # tabla -> (tipo, columna que identifica la organización, fábrica)
 FACTORIES: dict[str, tuple[Kind, str, Factory]] = {
     "organizations": ("org_root", "id", _organizations),
@@ -113,6 +122,7 @@ FACTORIES: dict[str, tuple[Kind, str, Factory]] = {
     "jobs": ("tenant", "org_id", _jobs),
     "outbox_events": ("tenant", "org_id", _outbox_events),
     "idempotency_keys": ("tenant", "org_id", _idempotency_keys),
+    "storage_objects": ("tenant", "org_id", _storage_objects),
     # Append-only: la aplicación solo inserta y lee lo suyo; nunca UPDATE ni DELETE.
     "audit_events": ("append_only", "org_id", _audit_events),
 }

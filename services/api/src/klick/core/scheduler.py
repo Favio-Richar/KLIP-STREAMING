@@ -18,6 +18,8 @@ from klick.core.idempotency import IdempotencyKey
 from klick.core.jobs import Dispatcher, Job, JobRef
 from klick.core.logging import configure_logging
 from klick.core.outbox import emit, publish_pending
+from klick.storage.backend import S3Backend, StorageBackend
+from klick.storage.gc import collect_garbage
 
 log = structlog.get_logger("klick.scheduler")
 
@@ -182,6 +184,7 @@ async def run_scheduler(
     dispatcher: Dispatcher,
     settings: Settings,
     stop: asyncio.Event,
+    storage: StorageBackend | None = None,
 ) -> None:
     async def publish() -> None:
         while (
@@ -200,6 +203,12 @@ async def run_scheduler(
         ),
         asyncio.create_task(_every("idempotency", 3600, lambda: cleanup_idempotency(db), stop)),
     ]
+    if storage is not None:
+        tasks.append(
+            asyncio.create_task(
+                _every("storage_gc", 3600, lambda: collect_garbage(db, storage, settings), stop)
+            )
+        )
     log.info("scheduler_started")
     await stop.wait()
     for t in tasks:
@@ -223,7 +232,7 @@ async def _main() -> None:
         with contextlib.suppress(NotImplementedError):  # Windows no soporta add_signal_handler
             loop.add_signal_handler(sig, stop.set)
     try:
-        await run_scheduler(db, redis, dispatcher, settings, stop)
+        await run_scheduler(db, redis, dispatcher, settings, stop, S3Backend(settings))
     finally:
         await redis.aclose()
         await db.dispose()

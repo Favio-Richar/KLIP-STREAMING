@@ -1,6 +1,7 @@
 """Fixtures compartidas. Las pruebas `db` usan una base temporal migrada con Alembic."""
 
 import asyncio
+import contextlib
 import os
 import subprocess
 import sys
@@ -19,6 +20,7 @@ from klick.core.email import MemoryEmailSender
 from klick.core.jobs import NullDispatcher
 from klick.core.seed import seed_permissions_and_roles
 from klick.main import create_app
+from klick.storage.backend import S3Backend
 from pydantic import SecretStr
 from redis.asyncio import Redis
 from sqlalchemy.engine import make_url
@@ -127,7 +129,9 @@ async def redis_client() -> AsyncIterator[Redis]:
 
 
 @pytest.fixture
-async def api(temp_db: dict[str, str], redis_client: Redis) -> AsyncIterator[ApiHarness]:
+async def api(
+    temp_db: dict[str, str], redis_client: Redis, storage_bucket: str
+) -> AsyncIterator[ApiHarness]:
     settings = Settings(
         environment="test",
         database_url=temp_db["app"],
@@ -136,6 +140,7 @@ async def api(temp_db: dict[str, str], redis_client: Redis) -> AsyncIterator[Api
         app_secret_key=SecretStr("test-secret-key-for-hmac-and-jwt-0123456789"),
         public_web_url="http://web.test",
         rate_limit_register_ip=10_000,
+        s3_bucket=storage_bucket,
         rate_limit_login_ip=10_000,
     )
     emails = MemoryEmailSender()
@@ -152,3 +157,38 @@ async def users(api: ApiHarness) -> AsyncIterator[Users]:
     u = Users(api)
     yield u
     await u.close()
+
+
+@pytest.fixture(scope="session")
+def storage_bucket() -> Iterator[str]:
+    """Bucket exclusivo de la sesión de pruebas (nunca el de desarrollo). Se limpia al terminar."""
+    name = f"klick-test-{uuid.uuid4().hex[:12]}"
+    yield name
+    settings = Settings(s3_bucket=name)
+    with contextlib.suppress(Exception):  # el bucket puede no haberse creado nunca
+        import boto3  # noqa: PLC0415
+
+        client = boto3.client(
+            "s3",
+            endpoint_url=settings.s3_endpoint,
+            aws_access_key_id=settings.s3_access_key,
+            aws_secret_access_key=settings.s3_secret_key.get_secret_value(),
+            region_name=settings.s3_region,
+        )
+        for page in client.get_paginator("list_objects_v2").paginate(Bucket=name):
+            for obj in page.get("Contents", []):
+                client.delete_object(Bucket=name, Key=obj["Key"])
+        client.delete_bucket(Bucket=name)
+
+
+@pytest.fixture
+async def storage(api: ApiHarness) -> AsyncIterator["S3Backend"]:
+    """Backend S3 real (MinIO) sobre el bucket de la sesión; omite si no hay almacén."""
+    backend = S3Backend(api.settings)
+    try:
+        await backend.ensure_bucket()
+    except Exception as exc:  # noqa: BLE001
+        if os.environ.get("CI"):
+            raise
+        pytest.skip(f"MinIO no disponible ({type(exc).__name__}); ejecute pnpm infra:up")
+    yield backend

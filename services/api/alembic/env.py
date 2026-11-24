@@ -8,6 +8,7 @@ from klick.core.config import get_settings
 from klick.core.models import Base
 from klick.identity import models as _identity_models  # noqa: F401
 from klick.orgs import models as _orgs_models  # noqa: F401
+from klick.storage import models as _storage_models  # noqa: F401
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 

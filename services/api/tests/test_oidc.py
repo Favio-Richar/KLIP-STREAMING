@@ -63,6 +63,7 @@ def test_provider_selection_rules() -> None:
         environment="production",
         app_secret_key=SecretStr("a-real-production-secret-0123456789abcdef"),
         encryption_master_key=SecretStr("another-real-production-secret-0123456789"),
+        s3_secret_key=SecretStr("a-real-production-s3-secret-0123456789"),
         feature_fake_adapters=True,
     )
     assert build_oidc_provider(prod) is None  # el fake nunca se activa en producción

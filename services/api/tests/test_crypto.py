@@ -38,5 +38,6 @@ def test_production_rejects_default_secrets() -> None:
         environment="production",
         app_secret_key=SecretStr("a-real-production-secret-0123456789abcdef"),
         encryption_master_key=SecretStr("another-real-production-secret-0123456789"),
+        s3_secret_key=SecretStr("a-real-production-s3-secret-0123456789"),
     )
     assert ok.secure_cookies is True

@@ -35,6 +35,16 @@ class Settings(BaseSettings):
     rate_limit_register_ip: int = 10  # por hora
     rate_limit_login_ip: int = 30  # por 5 minutos
 
+    s3_endpoint: str = "http://localhost:9000"  # interno (API y workers)
+    s3_public_endpoint: str = "http://localhost:9000"  # el que usa el navegador en URLs firmadas
+    s3_bucket: str = "klick"
+    s3_access_key: str = "klick_minio"
+    s3_secret_key: SecretStr = SecretStr("klick_minio_secret")
+    s3_region: str = "us-east-1"
+    storage_url_ttl_s: int = 900  # vida de las URL firmadas de subida y descarga
+    storage_orphan_grace_h: int = 24  # ADR-005: gracia antes de borrar un objeto sin referencias
+    storage_upload_stale_h: int = 24  # subidas sin completar se consideran abandonadas
+
     job_heartbeat_interval_s: float = 10
     job_heartbeat_timeout_s: float = 60  # sin latido durante este tiempo = worker perdido
     job_backoff_base_s: float = 5  # reintento n espera base * 2**(n-1), máx. 15 min
@@ -65,6 +75,7 @@ class Settings(BaseSettings):
                 "ENCRYPTION_MASTER_KEY": self.encryption_master_key.get_secret_value().startswith(
                     "change-me"
                 ),
+                "S3_SECRET_KEY": self.s3_secret_key.get_secret_value() == "klick_minio_secret",
             }
             bad = [name for name, is_default in defaults.items() if is_default]
             if bad:

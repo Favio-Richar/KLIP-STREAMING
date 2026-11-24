@@ -4,6 +4,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Literal
 
+import structlog
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from redis.asyncio import Redis
@@ -33,6 +34,8 @@ from klick.orgs.router import (
     tokens_router,
 )
 from klick.orgs.service import OrgService
+from klick.storage.backend import S3Backend
+from klick.storage.service import StorageService
 from klick.system.router import events_router, jobs_router
 
 API_PREFIX = "/api/v1"
@@ -70,6 +73,14 @@ def create_app(
             db, dispatcher or DramatiqDispatcher(setup_broker(settings.redis_url))
         )
         app.state.idempotency = IdempotencyStore(db, settings)
+        storage = S3Backend(settings)
+        app.state.storage = storage
+        app.state.storage_service = StorageService(db, storage, settings)
+        try:  # best-effort: si el almacén está caído, /readyz lo informa y la API arranca igual
+            await storage.ensure_bucket()
+        except Exception:
+            structlog.get_logger("klick.storage").warning("storage_unavailable_at_startup")
+        register_readiness_check(app, "storage", storage.ping)
         register_readiness_check(app, "db", db.ping)
         register_readiness_check(app, "redis", redis.ping)  # type: ignore[arg-type]
         yield

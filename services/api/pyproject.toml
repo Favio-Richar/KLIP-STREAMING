@@ -21,6 +21,7 @@ dependencies = [
   "httpx>=0.27",
   "tzdata>=2024.2",
   "dramatiq[redis]>=1.17",
+  "boto3>=1.35",
 ]
 
 [build-system]
