@@ -1,0 +1,29 @@
+{
+  "name": "@klick/video-project-schema",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Documento de edición (EditProject). La fuente única es edit-project.schema.json; Pydantic y Zod se generan.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./edit-project.schema.json"
+  },
+  "scripts": {
+    "generate": "node scripts/generate.mjs",
+    "generate:check": "node scripts/generate.mjs --check",
+    "lint": "eslint src tests",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4"
+  },
+  "devDependencies": {
+    "@klick/shared-config": "workspace:*",
+    "@types/node": "24.10.1",
+    "eslint": "9.39.5",
+    "json-schema-to-zod": "^2",
+    "typescript": "5.9.3",
+    "vitest": "5.1.1"
+  }
+}

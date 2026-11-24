@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0",
+  "canvas": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "background": "#000000"
+  },
+  "sources": [
+    {
+      "id": "s1",
+      "asset_id": "0190a1b2-c3d4-7e5f-8a6b-7c8d9e0f1a2b",
+      "kind": "video"
+    }
+  ],
+  "layout": {
+    "mode": "split",
+    "split": {
+      "top_source": "s1",
+      "bottom_source": "s1",
+      "ratio": 0.5
+    }
+  },
+  "timeline": {
+    "duration_ms": 28400,
+    "tracks": [
+      {
+        "id": "v1",
+        "kind": "video",
+        "items": [
+          {
+            "id": "i1",
+            "source_id": "s1",
+            "source_in_ms": 120000,
+            "source_out_ms": 148400,
+            "start_ms": 0
+          }
+        ]
+      }
+    ]
+  },
+  "audio": {
+    "normalize": {
+      "enabled": true
+    }
+  }
+}

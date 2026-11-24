@@ -31,7 +31,7 @@
     "lint:design": "node scripts/task.mjs scripts/check-design-rules.mjs -- node scripts/check-design-rules.mjs",
     "check": "pnpm lint && pnpm test",
     "format": "prettier --write .",
-    "lint:contract": "pnpm --filter @klick/client-sdk generate:check"
+    "lint:contract": "pnpm --filter @klick/client-sdk generate:check && pnpm --filter @klick/video-project-schema generate:check"
   },
   "devDependencies": {
     "prettier": "3.6.2",

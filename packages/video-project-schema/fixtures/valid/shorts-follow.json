@@ -1,0 +1,95 @@
+{
+  "schema_version": "1.0",
+  "canvas": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "background": "#000000"
+  },
+  "sources": [
+    {
+      "id": "s1",
+      "asset_id": "0190a1b2-c3d4-7e5f-8a6b-7c8d9e0f1a2b",
+      "kind": "video"
+    }
+  ],
+  "layout": {
+    "mode": "follow",
+    "follow": {
+      "smoothing": 0.85,
+      "subject": "face"
+    }
+  },
+  "timeline": {
+    "duration_ms": 28400,
+    "tracks": [
+      {
+        "id": "v1",
+        "kind": "video",
+        "items": [
+          {
+            "id": "i1",
+            "source_id": "s1",
+            "source_in_ms": 120000,
+            "source_out_ms": 148400,
+            "start_ms": 0,
+            "speed": 1.0,
+            "volume": 1.0,
+            "fade_in_ms": 0,
+            "fade_out_ms": 200,
+            "crop": {
+              "x": 0.28,
+              "y": 0,
+              "w": 0.316,
+              "h": 1
+            },
+            "keyframes": [
+              {
+                "t_ms": 0,
+                "scale": 1.0,
+                "x": 0.5,
+                "y": 0.5,
+                "ease": "out"
+              },
+              {
+                "t_ms": 12000,
+                "scale": 1.4,
+                "x": 0.4,
+                "y": 0.5,
+                "ease": "inout"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "t1",
+        "kind": "text",
+        "items": [
+          {
+            "id": "x1",
+            "start_ms": 0,
+            "end_ms": 2500,
+            "text": "¡Mira esto!",
+            "style_ref": "tpl:0190a1b2-c3d4-7e5f-8a6b-7c8d9e0f1a30",
+            "position": {
+              "x": 0.5,
+              "y": 0.18
+            },
+            "align": "center"
+          }
+        ]
+      }
+    ]
+  },
+  "audio": {
+    "normalize": {
+      "enabled": true
+    }
+  },
+  "captions": {
+    "track_id": "0190a1b2-c3d4-7e5f-8a6b-7c8d9e0f1a31",
+    "style_ref": "tpl:0190a1b2-c3d4-7e5f-8a6b-7c8d9e0f1a30",
+    "safe_area": "shorts"
+  }
+}

@@ -32,7 +32,7 @@ Formato: `- [ ] ID título` → `- [x] ID título — AAAA-MM-DD — resultado`
 - [x] F1-03 Imagen `worker-media` — 2026-11-24 — etapa `media` del Dockerfile con FFmpeg/FFprobe 7.1.1 fijados por huella, libass+fontconfig, usuario sin privilegios y contenedor endurecido; 6 pruebas de humo contra la imagen real
 - [x] F1-04 Trabajo `media.probe` — 2026-11-24 — análisis por contenido con demuxer forzado y protocolos restringidos, hash verificado, 5 derivados, estados y errores estables, reproceso, red interna sin internet; 55 pruebas en la imagen real + E2E con worker (Procesando→Listo); corrigió un fallo real del worker (modelos)
 - [x] F1-05 Biblioteca — 2026-11-24 — cuadrícula/lista con miniaturas, búsqueda con retardo, filtros, carga progresiva, detalle con reproductor del proxy, renombrar, etiquetas, reanálisis y eliminación con confirmación; E2E real con worker
-- [ ] F1-06 Esquema `EditProject`
+- [x] F1-06 Esquema `EditProject` — 2026-11-24 — JSON Schema como fuente única, Pydantic y Zod generados (con comprobación en lint), validación en 3 capas, reglas semánticas en Python y TS probadas con 37 fixtures compartidos, marco de migraciones; 75 pytest + 45 Vitest
 - [ ] F1-07 Módulo `clips`
 - [ ] F1-08 Generador del grafo de render
 - [ ] F1-09 Worker de render

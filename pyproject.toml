@@ -16,6 +16,9 @@ dev = [
     "asyncpg-stubs>=0.30",
     "boto3-stubs[s3]>=1.35",
     "pip-audit>=2.10.1",
+    "datamodel-code-generator>=0.101.0",
+    "jsonschema>=4.26.0",
+    "types-jsonschema>=4.26.0.20261006",
 ]
 
 [tool.uv]
@@ -42,6 +45,8 @@ ignore = ["E501"]  # el formateador acota el código; las cadenas largas son ace
 "**/tests/**" = ["S101", "S105", "S106", "S608", "E501", "ASYNC240"]
 # Las pruebas de imagen invocan `docker` (herramienta fija, argumentos propios, sin entrada externa).
 "tests/media/**" = ["S603", "S607"]
+# Modelos generados desde el JSON Schema (packages/video-project-schema): su formato lo fija el generador.
+"services/api/src/klick/edit_project/models.py" = ["I001"]
 
 [tool.pytest.ini_options]
 testpaths = ["services/api/tests", "tests/security", "tests/media"]

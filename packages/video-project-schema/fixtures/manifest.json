@@ -1,0 +1,187 @@
+[
+  {
+    "file": "valid/minimal.json",
+    "valid": true,
+    "errors": []
+  },
+  {
+    "file": "valid/shorts-follow.json",
+    "valid": true,
+    "errors": []
+  },
+  {
+    "file": "valid/split-layout.json",
+    "valid": true,
+    "errors": []
+  },
+  {
+    "file": "valid/audio-mix.json",
+    "valid": true,
+    "errors": []
+  },
+  {
+    "file": "valid/image-overlay.json",
+    "valid": true,
+    "errors": []
+  },
+  {
+    "file": "valid/speed-up.json",
+    "valid": true,
+    "errors": []
+  },
+  {
+    "file": "valid/two-cuts.json",
+    "valid": true,
+    "errors": []
+  },
+  {
+    "file": "invalid/wrong-version.json",
+    "valid": false,
+    "errors": ["schema"]
+  },
+  {
+    "file": "invalid/extra-property.json",
+    "valid": false,
+    "errors": ["schema"]
+  },
+  {
+    "file": "invalid/bad-color.json",
+    "valid": false,
+    "errors": ["schema"]
+  },
+  {
+    "file": "invalid/negative-time.json",
+    "valid": false,
+    "errors": ["schema"]
+  },
+  {
+    "file": "invalid/fractional-time.json",
+    "valid": false,
+    "errors": ["schema"]
+  },
+  {
+    "file": "invalid/speed-out-of-range.json",
+    "valid": false,
+    "errors": ["schema"]
+  },
+  {
+    "file": "invalid/empty-sources.json",
+    "valid": false,
+    "errors": ["schema"]
+  },
+  {
+    "file": "invalid/odd-canvas.json",
+    "valid": false,
+    "errors": ["schema"]
+  },
+  {
+    "file": "invalid/bad-fps.json",
+    "valid": false,
+    "errors": ["schema"]
+  },
+  {
+    "file": "invalid/unknown-track-kind.json",
+    "valid": false,
+    "errors": ["schema"]
+  },
+  {
+    "file": "invalid/bad-id.json",
+    "valid": false,
+    "errors": ["schema"]
+  },
+  {
+    "file": "invalid/missing-audio.json",
+    "valid": false,
+    "errors": ["schema"]
+  },
+  {
+    "file": "invalid/text-in-video-track.json",
+    "valid": false,
+    "errors": ["schema"]
+  },
+  {
+    "file": "invalid/dangling-source.json",
+    "valid": false,
+    "errors": ["unknown_source"]
+  },
+  {
+    "file": "invalid/duplicate-item-id.json",
+    "valid": false,
+    "errors": ["duplicate_id"]
+  },
+  {
+    "file": "invalid/duplicate-source-id.json",
+    "valid": false,
+    "errors": ["duplicate_id"]
+  },
+  {
+    "file": "invalid/source-kind-mismatch.json",
+    "valid": false,
+    "errors": ["source_kind_mismatch"]
+  },
+  {
+    "file": "invalid/out-before-in.json",
+    "valid": false,
+    "errors": ["invalid_range"]
+  },
+  {
+    "file": "invalid/exceeds-duration.json",
+    "valid": false,
+    "errors": ["exceeds_duration"]
+  },
+  {
+    "file": "invalid/overlap.json",
+    "valid": false,
+    "errors": ["track_overlap"]
+  },
+  {
+    "file": "invalid/fade-too-long.json",
+    "valid": false,
+    "errors": ["fade_too_long"]
+  },
+  {
+    "file": "invalid/keyframes-unordered.json",
+    "valid": false,
+    "errors": ["keyframes_unordered"]
+  },
+  {
+    "file": "invalid/keyframe-after-end.json",
+    "valid": false,
+    "errors": ["keyframe_out_of_range"]
+  },
+  {
+    "file": "invalid/crop-out-of-bounds.json",
+    "valid": false,
+    "errors": ["crop_out_of_bounds"]
+  },
+  {
+    "file": "invalid/split-without-config.json",
+    "valid": false,
+    "errors": ["layout_missing_config"]
+  },
+  {
+    "file": "invalid/fit-without-config.json",
+    "valid": false,
+    "errors": ["layout_missing_config"]
+  },
+  {
+    "file": "invalid/split-unknown-source.json",
+    "valid": false,
+    "errors": ["layout_unknown_source"]
+  },
+  {
+    "file": "invalid/split-same-source.json",
+    "valid": false,
+    "errors": ["layout_unknown_source"]
+  },
+  {
+    "file": "invalid/text-after-end.json",
+    "valid": false,
+    "errors": ["exceeds_duration"]
+  },
+  {
+    "file": "invalid/text-end-before-start.json",
+    "valid": false,
+    "errors": ["invalid_range"]
+  }
+]
