@@ -1,0 +1,128 @@
+/* Tokens de Klick. Fuente normativa: docs/08-diseno-ui.md §2.
+   Solo superficies planas: la elevación se expresa con tono de fondo y borde de 1 px. */
+
+:root {
+  /* tipografía */
+  --font-sans: var(--font-geist-sans), "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), "Geist Mono", ui-monospace, "Cascadia Mono", monospace;
+
+  /* espaciado (escala de 4 px) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* forma */
+  --radius-tag: 4px;
+  --radius-control: 6px;
+  --radius-card: 8px;
+  --radius-dialog: 12px;
+  --control-h-dense: 28px;
+  --control-h: 32px;
+  --control-h-touch: 40px;
+  --topbar-h: 48px;
+  --page-max: 1440px;
+
+  /* movimiento */
+  --dur-fast: 90ms;
+  --dur-base: 150ms;
+  --dur-slow: 240ms;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in: cubic-bezier(0.55, 0, 1, 0.45);
+
+  /* pistas del editor */
+  --track-video: #5b8def;
+  --track-audio: #2dd4a7;
+  --track-text: #f5a524;
+  --track-image: #c792ea;
+  --track-captions: #b8f43c;
+}
+
+/* Tema oscuro: predeterminado. */
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-0: #0b0d10;
+  --bg-1: #11141a;
+  --bg-2: #181c23;
+  --bg-3: #20252e;
+  --border-1: #262b35;
+  --border-2: #343b48;
+  --control-border: #667084; /* bordes de campos y controles: ≥ 3:1 sobre bg-0..bg-2 */
+  --text-1: #eceef2;
+  --text-2: #a4adbb;
+  --text-3: #8a93a4;
+  --accent: #b8f43c;
+  --accent-hover: #c9fa5e;
+  --accent-press: #a3db2e;
+  --on-accent: #0b0d10;
+  --accent-text: #b8f43c;
+  --focus-ring: #b8f43c;
+  --success: #2dd4a7;
+  --warning: #f5a524;
+  --danger: #f2495c;
+  --info: #4c9aff;
+  --scrim: rgba(0, 0, 0, 0.64);
+}
+
+/* Tema claro: lo fija el usuario o lo decide el sistema. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg-0: #f6f7f9;
+  --bg-1: #ffffff;
+  --bg-2: #f0f2f5;
+  --bg-3: #e6e9ee;
+  --border-1: #dde1e8;
+  --border-2: #c5cbd6;
+  --control-border: #6b7586;
+  --text-1: #12151a;
+  --text-2: #4a5362;
+  --text-3: #5f6878;
+  --accent: #b8f43c;
+  --accent-hover: #c9fa5e;
+  --accent-press: #a3db2e;
+  --on-accent: #0b0d10;
+  --accent-text: #4d7a00;
+  --focus-ring: #4d7a00;
+  --success: #0a7558;
+  --warning: #8a5300;
+  --danger: #c4203a;
+  --info: #1b5fc7;
+  --scrim: rgba(0, 0, 0, 0.64);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    color-scheme: light;
+    --bg-0: #f6f7f9;
+    --bg-1: #ffffff;
+    --bg-2: #f0f2f5;
+    --bg-3: #e6e9ee;
+    --border-1: #dde1e8;
+    --border-2: #c5cbd6;
+    --control-border: #6b7586;
+    --text-1: #12151a;
+    --text-2: #4a5362;
+    --text-3: #5f6878;
+    --accent-text: #4d7a00;
+    --focus-ring: #4d7a00;
+    --success: #0a7558;
+    --warning: #8a5300;
+    --danger: #c4203a;
+    --info: #1b5fc7;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0.01ms;
+    --dur-base: 0.01ms;
+    --dur-slow: 0.01ms;
+  }
+}

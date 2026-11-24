@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es-CL">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    <title>Sin conexión · Klick</title>
+    <style>
+      :root {
+        --bg: #0b0d10;
+        --card: #11141a;
+        --border: #343b48;
+        --text: #eceef2;
+        --muted: #a4adbb;
+        --accent: #b8f43c;
+        --on: #0b0d10;
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #f6f7f9;
+          --card: #ffffff;
+          --border: #c5cbd6;
+          --text: #12151a;
+          --muted: #4a5362;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          14px/1.5 system-ui,
+          sans-serif;
+      }
+      main {
+        max-width: 420px;
+        padding: 24px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 20px;
+        line-height: 1.2;
+      }
+      p {
+        margin: 0 0 16px;
+        color: var(--muted);
+      }
+      button {
+        height: 40px;
+        padding: 0 16px;
+        border: 0;
+        border-radius: 6px;
+        background: var(--accent);
+        color: var(--on);
+        font:
+          600 14px system-ui,
+          sans-serif;
+        cursor: pointer;
+      }
+      button:focus-visible {
+        outline: 2px solid var(--text);
+        outline-offset: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Sin conexión</h1>
+      <p>
+        No pudimos conectar con Klick. Tu trabajo está a salvo en el servidor. Revisa tu conexión y
+        vuelve a intentarlo.
+      </p>
+      <button type="button" onclick="location.reload()">Reintentar</button>
+    </main>
+  </body>
+</html>

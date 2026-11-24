@@ -15,16 +15,18 @@
     "worker:dev": "node scripts/task.mjs infra/compose/workers.yml -- docker compose -f docker-compose.yml -f infra/compose/workers.yml --profile core up worker-default worker-media worker-ai worker-publish scheduler",
     "web:dev": "node scripts/task.mjs apps/web/package.json -- pnpm --filter web dev",
     "desktop:dev": "node scripts/task.mjs apps/desktop/package.json -- pnpm --filter desktop dev",
-    "test": "pnpm test:py && pnpm test:js",
+    "test": "pnpm test:py && pnpm test:js && pnpm test:scripts",
+    "test:scripts": "node --test scripts/check-design-rules.test.mjs",
     "test:py": "uv run pytest",
     "test:js": "turbo run test",
-    "test:e2e": "node scripts/task.mjs tests/e2e/package.json -- pnpm --dir tests/e2e test",
-    "lint": "pnpm lint:py && pnpm lint:js && pnpm lint:design",
+    "test:e2e": "node scripts/task.mjs tests/e2e/package.json -- pnpm --dir tests/e2e e2e",
+    "lint": "pnpm lint:py && pnpm lint:js && pnpm lint:design && pnpm lint:contract",
     "lint:py": "uv run ruff check . && uv run ruff format --check . && uv run mypy",
     "lint:js": "turbo run lint typecheck",
     "lint:design": "node scripts/task.mjs scripts/check-design-rules.mjs -- node scripts/check-design-rules.mjs",
     "check": "pnpm lint && pnpm test",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "lint:contract": "pnpm --filter @klick/client-sdk generate:check"
   },
   "devDependencies": {
     "prettier": "3.6.2",

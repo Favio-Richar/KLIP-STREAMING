@@ -83,9 +83,9 @@ async def test_every_table_with_org_id_has_rls_forced_and_a_policy(
                 table,
             )
             assert policies, f"{table}: sin políticas"
-            assert any(
-                "app.org_id" in p["expr"] for p in policies
-            ), f"{table}: ninguna política usa app.org_id"
+            assert any("app.org_id" in p["expr"] for p in policies), (
+                f"{table}: ninguna política usa app.org_id"
+            )
     finally:
         await conn.close()
 
@@ -111,9 +111,9 @@ async def test_tables_without_org_id_are_explicitly_allowed(temp_db: dict[str, s
         await conn.close()
     unscoped = {t for t, cols in tables.items() if "org_id" not in cols} - {"organizations"}
     unknown = unscoped - NO_ORG_TABLES
-    assert (
-        not unknown
-    ), f"Tablas sin org_id que no están en NO_ORG_TABLES (regla 2 de CLAUDE.md): {sorted(unknown)}"
+    assert not unknown, (
+        f"Tablas sin org_id que no están en NO_ORG_TABLES (regla 2 de CLAUDE.md): {sorted(unknown)}"
+    )
 
 
 async def test_app_role_has_no_bypass(temp_db: dict[str, str]) -> None:
@@ -158,9 +158,9 @@ async def test_isolation_between_two_organizations(
         await use(org_a)
         visible = {r[0] for r in await app.fetch(f"select {key} from {table}")}
         allowed = {org_a, None} if kind == "reference" else {org_a}
-        assert (
-            visible <= allowed
-        ), f"{table}: con contexto A se ven filas ajenas: {visible - allowed}"
+        assert visible <= allowed, (
+            f"{table}: con contexto A se ven filas ajenas: {visible - allowed}"
+        )
         assert org_a in visible, f"{table}: con contexto A no se ve la fila propia"
         assert not await app.fetch(f"select 1 from {table} where {key} = $1", org_b)
 
@@ -186,9 +186,9 @@ async def test_isolation_between_two_organizations(
         for empty in (None,):
             await use(empty)
             rows = {r[0] for r in await app.fetch(f"select {key} from {table}")}
-            assert rows <= (
-                {None} if kind == "reference" else set()
-            ), f"{table}: visible sin contexto"
+            assert rows <= ({None} if kind == "reference" else set()), (
+                f"{table}: visible sin contexto"
+            )
         # y lo de A sigue intacto para su propietario
         await use(org_a)
         assert org_a in {r[0] for r in await app.fetch(f"select {key} from {table}")}

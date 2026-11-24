@@ -5,3 +5,4 @@ dist
 pnpm-lock.yaml
 uv.lock
 *.md
+packages/client-sdk/openapi.json

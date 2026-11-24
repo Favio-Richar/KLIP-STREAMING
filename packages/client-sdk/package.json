@@ -1,0 +1,28 @@
+{
+  "name": "@klick/client-sdk",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.d.ts"
+  },
+  "scripts": {
+    "generate": "uv run --package klick python scripts/dump_openapi.py && openapi-typescript openapi.json -o src/schema.d.ts && prettier --write src/schema.d.ts",
+    "generate:check": "node scripts/check-generated.mjs",
+    "lint": "eslint src tests",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "openapi-fetch": "0.17.0"
+  },
+  "devDependencies": {
+    "@klick/shared-config": "workspace:*",
+    "@types/node": "24.10.1",
+    "eslint": "9.39.5",
+    "openapi-typescript": "7.13.0",
+    "typescript": "5.9.3",
+    "vitest": "5.1.1"
+  }
+}

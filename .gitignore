@@ -34,3 +34,6 @@ Thumbs.db
 /data/
 *.log
 .claude/settings.local.json
+.e2e/
+test-results/
+playwright-report/

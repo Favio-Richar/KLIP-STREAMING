@@ -116,9 +116,9 @@ async def test_foreign_organization_is_never_reachable(
 
         # (1) con la organización A en la cabecera / ruta: nunca autorizado
         r = await attacker.call(method, short, org=a.org_id, json=body)
-        assert (
-            r.status_code == 403
-        ), f"{method} {template} con org ajena respondió {r.status_code}: {r.text}"
+        assert r.status_code == 403, (
+            f"{method} {template} con org ajena respondió {r.status_code}: {r.text}"
+        )
 
         # (2) con la organización propia pero IDs de recursos ajenos: nada se resuelve
         if "{" in template and policy.kind == "org_header":

@@ -65,9 +65,9 @@ async def test_cookie_authenticated_mutations_require_csrf(api: ApiHarness, user
             json={},
             headers={"X-Org-ID": org["id"]},  # sin X-CSRF-Token
         )
-        assert (
-            r.status_code == 403
-        ), f"{method} {path}: aceptó una mutación sin CSRF ({r.status_code})"
+        assert r.status_code == 403, (
+            f"{method} {path}: aceptó una mutación sin CSRF ({r.status_code})"
+        )
         assert r.json()["code"] == "csrf_failed"
 
 
