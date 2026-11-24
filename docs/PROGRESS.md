@@ -22,7 +22,7 @@ Formato: `- [ ] ID título` → `- [x] ID título — AAAA-MM-DD — resultado`
 - [ ] F0-14 Cascarón de escritorio
 - [x] F0-15 Integración continua — 2026-11-24 — .github/workflows/ci.yml (static+gitleaks, audit pip/pnpm, pytest con servicios, Vitest, Playwright de humo); cada paso verificado en local, falta primera ejecución en GitHub (sin remoto configurado)
 - [x] F0-16 Observabilidad base — 2026-11-24 — /metrics (HTTP por ruta, jobs por tipo/estado), trazas OTLP opcionales con trace_id en logs, perfil observability (Prometheus+Grafana) con panel de jobs verificado de extremo a extremo; pnpm obs:up
-- [ ] F0-17 Documentación operativa
+- [x] F0-17 Documentación operativa — 2026-11-24 — runbook de entorno verificado en clon limpio (halló y corrigió fallo de COOKIE_SECURE vacío), incidentes.md y backup-restauracion.md con restauración y mirror de MinIO probados; 239 pytest
 - [ ] F0-ACEPTACION prueba de aceptación de la fase
 
 ## F1 — Media y Clip Studio

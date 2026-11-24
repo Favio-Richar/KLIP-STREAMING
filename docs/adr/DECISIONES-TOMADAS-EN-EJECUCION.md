@@ -60,3 +60,4 @@ Una línea por decisión que no estaba en la documentación. Formato: `AAAA-MM-D
 2026-11-24 · F0-16 · Etiquetas HTTP con la plantilla de ruta y `unmatched` para rutas inexistentes · evita explosión de cardinalidad y que ids de recursos acaben en Prometheus
 2026-11-24 · F0-16 · Trazas OpenTelemetry solo si `OTEL_EXPORTER_OTLP_ENDPOINT` existe, con registro de métricas y proveedor por aplicación (no globales) · `create_app` se llama muchas veces en pruebas; sin endpoint no hay costo ni dependencia de red
 2026-11-24 · F0-16 · Prometheus recibe el destino por `OBS_API_TARGET` (plantilla + `sed` al arrancar) · permite apuntar a la API en cualquier puerto sin editar archivos versionados
+2026-11-24 · F0-17 · `Settings` trata `COOKIE_SECURE=` vacío como automático (None) · `.env.example` lo trae vacío y la verificación en limpio mostró que la API no arrancaba con él

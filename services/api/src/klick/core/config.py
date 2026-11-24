@@ -3,7 +3,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, SecretStr, model_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -72,6 +72,12 @@ class Settings(BaseSettings):
 
     cors_allow_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
     feature_fake_adapters: bool = True
+
+    @field_validator("cookie_secure", mode="before")
+    @classmethod
+    def _empty_cookie_secure_is_auto(cls, value: object) -> object:
+        # `.env.example` deja `COOKIE_SECURE=` vacío: significa "automático", no un booleano inválido.
+        return None if isinstance(value, str) and not value.strip() else value
 
     @model_validator(mode="after")
     def _no_default_secrets_in_production(self) -> "Settings":

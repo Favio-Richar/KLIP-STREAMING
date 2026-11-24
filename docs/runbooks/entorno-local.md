@@ -68,5 +68,20 @@ ffmpeg -re -f lavfi -i testsrc2=size=1280x720:rate=30 -f lavfi -i sine=frequency
 - `node_modules` y `.venv` se instalan nativos en Windows (no dentro de contenedores) y se excluyen de los montajes.
 - Los datos pesados (PostgreSQL, MinIO) usan volúmenes con nombre de Docker, no carpetas de Windows.
 
-## Verificación de entorno limpio (tarea F0-17)
-Clonar en una carpeta nueva, seguir esta guía al pie de la letra y confirmar que `pnpm check` pasa. Cualquier paso que falle se corrige aquí.
+## Verificación de entorno limpio (F0-17)
+Verificada el 2026-11-24 clonando el repositorio (solo lo versionado) en una carpeta nueva y siguiendo esta guía:
+
+| Paso | Resultado |
+|---|---|
+| `copy .env.example .env` | Encontró un fallo real: `COOKIE_SECURE=` vacío impedía arrancar la API. Corregido en `Settings` y cubierto por `test_config.py`, que carga `.env.example` completo |
+| `pnpm install --frozen-lockfile`, `uv sync --all-packages` | OK (~11 s la parte JS) |
+| `pnpm lint` | OK: ruff, mypy, eslint, tsc, reglas de diseño y contrato OpenAPI |
+| `pnpm test:js`, `pnpm test:scripts` | OK |
+| `pnpm infra:up`, `db:migrate`, `db:seed` | OK; los tests de base de datos reutilizan la infraestructura ya levantada |
+
+Notas para quien repita la verificación:
+- En Windows con Git Bash, antepón `MSYS_NO_PATHCONV=1` a los `docker exec` que usan rutas como `/tmp`.
+- Si el puerto 8000 está ocupado por otro servicio, levanta la API en otro puerto y ajusta `PUBLIC_API_URL`, `JWT_ISSUER`, `MCP_PUBLIC_URL` y `KLICK_API_URL` (el web reescribe `/api/*` hacia esa URL). Las pruebas E2E usan 8010 (API) y 3100 (web), y exigen que estén libres.
+- Para repetir esto sin tocar tus datos, usa `COMPOSE_PROJECT_NAME` y puertos distintos en el `.env` del clon.
+
+Otros runbooks: [`incidentes.md`](incidentes.md) y [`backup-restauracion.md`](backup-restauracion.md).
