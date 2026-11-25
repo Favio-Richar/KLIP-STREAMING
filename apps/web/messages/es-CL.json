@@ -470,7 +470,115 @@
         "probe_timeout": "El análisis tardó demasiado. Inténtalo de nuevo.",
         "processing_failed": "No pudimos procesar el archivo. Puedes volver a intentarlo.",
         "unknown": "No pudimos procesar el archivo."
+      },
+      "createClip": "Crear clip"
+    }
+  },
+  "clips": {
+    "title": "Clips",
+    "heading": "Clips",
+    "loadFailed": "No se pudieron cargar los clips",
+    "retry": "Reintentar",
+    "emptyTitle": "Todavía no tienes clips",
+    "emptyBody": "Crea el primero desde un video de tu biblioteca.",
+    "goLibrary": "Ir a la biblioteca",
+    "loadMore": "Cargar más",
+    "status": {
+      "draft": "Borrador",
+      "ready": "Listo",
+      "rendering": "Exportando",
+      "failed": "Con error"
+    }
+  },
+  "editor": {
+    "title": "Editor de clips",
+    "back": "Volver a clips",
+    "notFoundTitle": "No encontramos este clip",
+    "notFoundBody": "Puede que se haya eliminado o que no pertenezca a esta organización.",
+    "loadFailed": "No se pudo abrir el editor",
+    "retry": "Reintentar",
+    "undo": "Deshacer",
+    "redo": "Rehacer",
+    "play": "Reproducir",
+    "pause": "Pausar",
+    "split": "Dividir en el cabezal",
+    "snap": "Imán",
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "saveVersion": "Guardar versión",
+    "versionSaved": "Versión guardada",
+    "versionFailed": "No se pudo guardar la versión",
+    "conflict": "Otra sesión modificó este clip. Recarga para ver la última versión; tus cambios locales no se guardaron.",
+    "reload": "Recargar",
+    "save": {
+      "saved": "Guardado",
+      "dirty": "Sin guardar",
+      "saving": "Guardando…",
+      "error": "Error al guardar",
+      "conflict": "Conflicto"
+    },
+    "export": {
+      "action": "Exportar",
+      "failed": "No se pudo iniciar la exportación",
+      "progress": "Progreso de la exportación",
+      "download": "Descargar",
+      "status": {
+        "queued": "En cola",
+        "running": "Exportando…",
+        "succeeded": "Exportación lista",
+        "failed": "La exportación falló",
+        "canceled": "Exportación cancelada"
       }
+    },
+    "preview": {
+      "canvas": "Vista previa del clip"
+    },
+    "timeline": {
+      "region": "Línea de tiempo",
+      "marker": "Marcador",
+      "range": "Rango de entrada y salida",
+      "track": {
+        "video": "Video",
+        "audio": "Audio",
+        "text": "Texto",
+        "image": "Imagen"
+      }
+    },
+    "inspector": {
+      "clip": "Clip",
+      "duration": "Duración",
+      "canvas": "Lienzo",
+      "layout": "Encuadre",
+      "layoutMode": {
+        "fit": "Ajustar",
+        "follow": "Seguir al sujeto",
+        "manual": "Manual",
+        "split": "Dividido"
+      },
+      "selectHint": "Selecciona un bloque de la línea de tiempo para editarlo.",
+      "kind": {
+        "video": "Video",
+        "audio": "Audio",
+        "text": "Texto",
+        "image": "Imagen"
+      },
+      "start": "Inicio",
+      "length": "Duración",
+      "source": "Fuente",
+      "volume": "Volumen: {value} %",
+      "volumeLabel": "Volumen",
+      "speed": "Velocidad",
+      "fadeIn": "Fundido de entrada (ms)",
+      "fadeOut": "Fundido de salida (ms)",
+      "text": "Texto",
+      "align": "Alineación",
+      "alignment": {
+        "left": "Izquierda",
+        "center": "Centro",
+        "right": "Derecha"
+      },
+      "split": "Dividir",
+      "delete": "Eliminar"
     }
   }
 }

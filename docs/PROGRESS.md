@@ -36,7 +36,7 @@ Formato: `- [ ] ID título` → `- [x] ID título — AAAA-MM-DD — resultado`
 - [x] F1-07 Módulo `clips` — 2026-11-24 — migración 0009 reversible (clips, edit_projects, clip_versions con RLS, FKs compuestas y versiones inmutables por trigger y permisos), creación desde un tramo, guardado con If-Match/ETag (412 verificado con carrera real), validación contra assets reales, versiones y API; 26 pruebas propias + arnés de seguridad ampliado
 - [x] F1-08 Generador del grafo de render — 2026-11-24 — módulo puro y determinista (fit/follow/manual/split, zoom con keyframes, velocidad, texto por archivo, imágenes, fundidos, mezcla con ducking, loudnorm 2 pasadas, subtítulos); 40 pruebas de instantánea/seguridad + 18 con FFmpeg real midiendo el resultado
 - [x] F1-09 Worker de render — 2026-11-24 — migración 0010 (render_presets, render_jobs único por versión+preset, usage_records solo de inserción), servicio y API (presets, pedir/consultar/cancelar), job render con progreso SSE, cancelación que mata FFmpeg, recuperación tras caída del worker sin duplicar; 10 pruebas de API + 7 con FFmpeg real (incluye cancelar a mitad y caída del worker)
-- [ ] F1-10 Editor
+- [x] F1-10 Editor — 2026-11-24 — núcleo puro con 21 pruebas, estado con historial/guardado automático (If-Match, conflicto 412), vista previa canvas con audio, línea de tiempo (regla, pistas, asas, imán, zoom, marcadores), inspector, atajos de docs/08, lista de clips y "Crear clip" desde la biblioteca; 5 pruebas de estado y 3 E2E reales (división, deshacer, persistencia, conflicto, recorte por asa, exportación)
 - [ ] F1-11 Texto, imagen y subtítulos manuales
 - [ ] F1-12 Plantillas y kits de marca
 - [ ] F1-13 Exportaciones

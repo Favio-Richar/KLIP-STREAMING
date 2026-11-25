@@ -470,7 +470,115 @@
         "probe_timeout": "The analysis took too long. Try again.",
         "processing_failed": "We couldn't process the file. You can try again.",
         "unknown": "We couldn't process the file."
+      },
+      "createClip": "Create clip"
+    }
+  },
+  "clips": {
+    "title": "Clips",
+    "heading": "Clips",
+    "loadFailed": "Couldn't load clips",
+    "retry": "Retry",
+    "emptyTitle": "You have no clips yet",
+    "emptyBody": "Create the first one from a video in your library.",
+    "goLibrary": "Go to library",
+    "loadMore": "Load more",
+    "status": {
+      "draft": "Draft",
+      "ready": "Ready",
+      "rendering": "Exporting",
+      "failed": "Failed"
+    }
+  },
+  "editor": {
+    "title": "Clip editor",
+    "back": "Back to clips",
+    "notFoundTitle": "We couldn't find this clip",
+    "notFoundBody": "It may have been deleted or belong to another organization.",
+    "loadFailed": "Couldn't open the editor",
+    "retry": "Retry",
+    "undo": "Undo",
+    "redo": "Redo",
+    "play": "Play",
+    "pause": "Pause",
+    "split": "Split at playhead",
+    "snap": "Snapping",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "saveVersion": "Save version",
+    "versionSaved": "Version saved",
+    "versionFailed": "Couldn't save the version",
+    "conflict": "Another session changed this clip. Reload to see the latest version; your local changes were not saved.",
+    "reload": "Reload",
+    "save": {
+      "saved": "Saved",
+      "dirty": "Unsaved",
+      "saving": "Saving…",
+      "error": "Save failed",
+      "conflict": "Conflict"
+    },
+    "export": {
+      "action": "Export",
+      "failed": "Couldn't start the export",
+      "progress": "Export progress",
+      "download": "Download",
+      "status": {
+        "queued": "Queued",
+        "running": "Exporting…",
+        "succeeded": "Export ready",
+        "failed": "Export failed",
+        "canceled": "Export canceled"
       }
+    },
+    "preview": {
+      "canvas": "Clip preview"
+    },
+    "timeline": {
+      "region": "Timeline",
+      "marker": "Marker",
+      "range": "In/out range",
+      "track": {
+        "video": "Video",
+        "audio": "Audio",
+        "text": "Text",
+        "image": "Image"
+      }
+    },
+    "inspector": {
+      "clip": "Clip",
+      "duration": "Duration",
+      "canvas": "Canvas",
+      "layout": "Framing",
+      "layoutMode": {
+        "fit": "Fit",
+        "follow": "Follow subject",
+        "manual": "Manual",
+        "split": "Split"
+      },
+      "selectHint": "Select a timeline block to edit it.",
+      "kind": {
+        "video": "Video",
+        "audio": "Audio",
+        "text": "Text",
+        "image": "Image"
+      },
+      "start": "Start",
+      "length": "Length",
+      "source": "Source",
+      "volume": "Volume: {value}%",
+      "volumeLabel": "Volume",
+      "speed": "Speed",
+      "fadeIn": "Fade in (ms)",
+      "fadeOut": "Fade out (ms)",
+      "text": "Text",
+      "align": "Alignment",
+      "alignment": {
+        "left": "Left",
+        "center": "Center",
+        "right": "Right"
+      },
+      "split": "Split",
+      "delete": "Delete"
     }
   }
 }

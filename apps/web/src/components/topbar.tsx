@@ -25,7 +25,7 @@ const NAV: ReadonlyArray<{ key: string; href: string | null }> = [
   { key: "panel", href: "/" },
   { key: "live", href: null },
   { key: "library", href: "/library" },
-  { key: "clips", href: null },
+  { key: "clips", href: "/clips" },
   { key: "agent", href: null },
   { key: "publish", href: null },
   { key: "analytics", href: null },

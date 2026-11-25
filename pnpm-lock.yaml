@@ -187,6 +187,9 @@ importers:
       '@klick/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@klick/video-project-schema':
+        specifier: workspace:*
+        version: link:../../packages/video-project-schema
       '@tanstack/react-query':
         specifier: 5.108.4
         version: 5.108.4(@types/react@19.2.7)(react@19.3.1)

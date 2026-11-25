@@ -14,7 +14,7 @@ import {
   toast,
   type Tone,
 } from "@klick/ui";
-import { ArrowLeft, Download, FileQuestion, RotateCcw, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, FileQuestion, RotateCcw, Scissors, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -107,6 +107,25 @@ function Loaded({ asset, orgId, canWrite }: { asset: Asset; orgId: string; canWr
     },
     onError: (e) => toast.error(errorMessage(e)),
   });
+  const createClip = useMutation({
+    mutationFn: () =>
+      unwrap(
+        api.POST("/api/v1/clips", {
+          body: {
+            source_asset_id: asset.id,
+            start_ms: 0,
+            end_ms: Math.max(1000, Math.min(asset.duration_ms ?? 60_000, 60_000)),
+            aspect: "9x16",
+            title: asset.title,
+          },
+        }),
+      ),
+    onSuccess: (clip) => {
+      void qc.invalidateQueries({ queryKey: ["clips"] });
+      router.push(`/clips/${clip.id}`);
+    },
+    onError: (e) => toast.error(errorMessage(e)),
+  });
   const download = useMutation({
     mutationFn: () =>
       unwrap(
@@ -137,6 +156,16 @@ function Loaded({ asset, orgId, canWrite }: { asset: Asset; orgId: string; canWr
           <Info asset={asset} />
           <TagEditor asset={asset} orgId={orgId} canWrite={canWrite} onSaved={refresh} />
           <div className="flex flex-wrap gap-2">
+            {asset.kind === "video" && asset.status === "ready" ? (
+              <Button
+                variant="primary"
+                loading={createClip.isPending}
+                onClick={() => createClip.mutate()}
+              >
+                <Scissors size={16} aria-hidden />
+                {t("detail.createClip")}
+              </Button>
+            ) : null}
             <Button
               loading={download.isPending}
               disabled={asset.status === "uploading"}
