@@ -42,6 +42,7 @@ class Tenant:
     upload_id: str = ""
     clip_id: str = ""
     render_job_id: str = ""
+    track_id: str = ""
     extra: dict[str, Any] = field(default_factory=dict)
 
     def actor(self, role: str) -> Actor:
@@ -125,6 +126,10 @@ async def build_tenant(api: ApiHarness, users: Users, tag: str) -> Tenant:
     )
     tenant.clip_id = clip.json()["id"]
     await owner.call("POST", f"/clips/{tenant.clip_id}/versions", org=org["id"], json={})
+    track = await owner.call(
+        "POST", f"/clips/{tenant.clip_id}/caption-tracks", org=org["id"], json={}
+    )
+    tenant.track_id = track.json()["id"]
     render = await owner.call("POST", f"/clips/{tenant.clip_id}/render", org=org["id"], json={})
     tenant.render_job_id = render.json()["id"]
     return tenant
@@ -144,6 +149,7 @@ def media_path_values(t: "Tenant") -> dict[str, str]:
         "upload_id": t.upload_id,
         "clip_id": t.clip_id,
         "render_job_id": t.render_job_id,
+        "track_id": t.track_id,
         "version": "1",
         "kind": "thumbnail",  # parámetro de ruta de derivados
     }
@@ -162,6 +168,10 @@ MEDIA_BODIES: dict[tuple[str, str], object] = {
     ("PATCH", "/clips/{clip_id}/edit-project"): {"document": {}},
     ("POST", "/clips/{clip_id}/versions"): {},
     ("POST", "/clips/{clip_id}/render"): {},
+    ("POST", "/clips/{clip_id}/caption-tracks"): {},
+    ("PUT", "/caption-tracks/{track_id}/cues"): {
+        "cues": [{"start_ms": 0, "end_ms": 900, "text": "pwn"}]
+    },
     ("POST", "/projects"): {"name": "pwn"},
     ("PATCH", "/projects/{project_id}"): {"name": "pwn"},
     ("POST", "/folders"): {"name": "pwn"},

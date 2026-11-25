@@ -42,6 +42,7 @@ from klick.edit_project.models import EditProject
 from klick.media import ffmpeg as ff
 from klick.media.models import MediaAsset
 from klick.media.service import MediaService
+from klick.render.ass import build_ass
 from klick.render.exprs import RenderPlanError
 from klick.render.graph import (
     LoudnormMeasure,
@@ -161,7 +162,9 @@ async def render_clip(ctx: JobContext) -> dict[str, Any]:
     scratch = _scratch(ctx.settings, ctx.job_id)
     scratch.mkdir(parents=True, exist_ok=False)
     try:
-        return await _render(ctx, media, storage, job, version.document, clip, preset_row, scratch)
+        return await _render(
+            ctx, media, storage, job, version.document, version.captions, clip, preset_row, scratch
+        )
     except (ff.MediaCanceled, JobCanceledError):
         await _set_state(ctx, render_job_id, status="canceled", finished=True)
         raise JobCanceledError() from None
@@ -225,6 +228,7 @@ async def _render(
     storage: StorageService,
     job: RenderJob,
     raw_document: dict[str, Any],
+    captions_snapshot: dict[str, Any] | None,
     clip: Clip,
     preset_row: RenderPresetRow,
     scratch: Path,
@@ -239,8 +243,10 @@ async def _render(
         doc: EditProject = parse_edit_project(migrate_edit_project(raw_document))
     except (EditProjectInvalid, MigrationError):
         raise RenderRejected("invalid_document") from None
-    if doc.captions is not None:
-        raise RenderRejected("captions_unavailable")
+    if doc.captions is not None and (
+        captions_snapshot is None or captions_snapshot.get("track_id") != doc.captions.track_id
+    ):
+        raise RenderRejected("captions_unavailable")  # la versión no trae los subtítulos
 
     # 2) fuentes: assets vivos y listos de esta organización
     assets = await media.assets_by_ids(org_id, {uuid.UUID(src.asset_id) for src in doc.sources})
@@ -276,6 +282,19 @@ async def _render(
     aux.mkdir()
     output = scratch / "render.mp4"
     preset = _preset_of(preset_row)
+    ass_path: str | None = None
+    if doc.captions is not None and captions_snapshot is not None:
+        # los subtítulos salen de la instantánea de la versión: el render es reproducible
+        ass_file = aux / "captions.ass"
+        ass_text = build_ass(
+            captions_snapshot.get("cues", []),
+            width=doc.canvas.width,
+            height=doc.canvas.height,
+            safe_area=doc.captions.safe_area,
+            duration_ms=doc.timeline.duration_ms,
+        )
+        await asyncio.to_thread(ass_file.write_text, ass_text, encoding="utf-8")
+        ass_path = str(ass_file)
 
     def inputs(measured: LoudnormMeasure | None = None) -> RenderInputs:
         return RenderInputs(
@@ -285,6 +304,7 @@ async def _render(
             ffmpeg=s.ffmpeg_path,
             threads=s.media_ffmpeg_threads,
             loudnorm=measured,
+            ass_path=ass_path,
         )
 
     try:

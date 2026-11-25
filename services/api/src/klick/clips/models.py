@@ -63,6 +63,8 @@ class ClipVersion(IdMixin, Base):
     schema_version: Mapped[str] = mapped_column(Text, nullable=False)
     document: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     label: Mapped[str | None] = mapped_column(Text)
+    # Subtítulos vigentes al congelar la versión (cues incluidos): el render los usa tal cual.
+    captions: Mapped[dict[str, Any] | None] = mapped_column(JSONB(none_as_null=True))
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
     )

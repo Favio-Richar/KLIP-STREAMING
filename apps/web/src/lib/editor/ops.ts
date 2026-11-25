@@ -317,3 +317,102 @@ export function snapBlock(
   const snappedEnd = snap(startMs + lengthMs, points, thresholdMs);
   return snappedEnd !== startMs + lengthMs ? snappedEnd - lengthMs : startMs;
 }
+
+// ------------------------------------------------------------------------------------ capas
+
+function ensureTrack(
+  doc: Doc,
+  kind: "text" | "image",
+  newId: (prefix: string) => string,
+): {
+  doc: Doc;
+  trackIndex: number;
+} {
+  const existing = doc.timeline.tracks.findIndex((t) => t.kind === kind);
+  if (existing >= 0) return { doc, trackIndex: existing };
+  const track = { id: newId(kind === "text" ? "t" : "g"), kind, items: [] } as unknown as Track;
+  const tracks = [...doc.timeline.tracks, track];
+  return {
+    doc: { ...doc, timeline: { ...doc.timeline, tracks } } as Doc,
+    trackIndex: tracks.length - 1,
+  };
+}
+
+function layerSpan(doc: Doc, atMs: number, lengthMs: number): { start: number; end: number } {
+  const total = doc.timeline.duration_ms;
+  const start = Math.round(clamp(atMs, 0, Math.max(0, total - MIN_ITEM_MS * 5)));
+  return { start, end: Math.min(total, start + lengthMs) };
+}
+
+function appendItem(doc: Doc, trackIndex: number, item: Item): Doc {
+  const tracks = doc.timeline.tracks.map((t, i) =>
+    i === trackIndex ? ({ ...t, items: [...t.items, item] } as Track) : t,
+  );
+  return { ...doc, timeline: { ...doc.timeline, tracks } } as Doc;
+}
+
+/** Añade una capa de texto en `atMs` (2,5 s por defecto, sin salir de la línea de tiempo). */
+export function addTextLayer(
+  doc: Doc,
+  atMs: number,
+  text: string,
+  newId: (prefix: string) => string,
+): { doc: Doc; id: string } {
+  const withTrack = ensureTrack(doc, "text", newId);
+  const { start, end } = layerSpan(withTrack.doc, atMs, 2500);
+  const id = newId("x");
+  const item = {
+    id,
+    start_ms: start,
+    end_ms: end,
+    text,
+    position: { x: 0.5, y: 0.18 },
+    align: "center",
+  } as unknown as Item;
+  return { doc: appendItem(withTrack.doc, withTrack.trackIndex, item), id };
+}
+
+/** Añade una imagen de la biblioteca como capa. Reutiliza la fuente si el archivo ya está. */
+export function addImageLayer(
+  doc: Doc,
+  assetId: string,
+  atMs: number,
+  newId: (prefix: string) => string,
+): { doc: Doc; id: string } {
+  let sourceId = doc.sources.find((s) => s.asset_id === assetId && s.kind === "image")?.id;
+  let base = doc;
+  if (!sourceId) {
+    sourceId = newId("s");
+    base = {
+      ...doc,
+      sources: [...doc.sources, { id: sourceId, asset_id: assetId, kind: "image" }],
+    } as Doc;
+  }
+  const withTrack = ensureTrack(base, "image", newId);
+  const { start, end } = layerSpan(withTrack.doc, atMs, 3000);
+  const id = newId("m");
+  const item = {
+    id,
+    source_id: sourceId,
+    start_ms: start,
+    end_ms: end,
+    position: { x: 0.5, y: 0.5 },
+    scale: 1,
+  } as unknown as Item;
+  return { doc: appendItem(withTrack.doc, withTrack.trackIndex, item), id };
+}
+
+/** Enlaza (o desenlaza con `null`) la pista de subtítulos del documento. */
+export function setCaptionsTrack(doc: Doc, trackId: string | null): Doc {
+  if (trackId === null) {
+    if (!doc.captions) return doc;
+    const { captions: _removed, ...rest } = doc;
+    void _removed;
+    return rest as Doc;
+  }
+  if (doc.captions?.track_id === trackId) return doc;
+  return {
+    ...doc,
+    captions: { ...(doc.captions ?? {}), track_id: trackId, safe_area: "shorts" },
+  } as Doc;
+}

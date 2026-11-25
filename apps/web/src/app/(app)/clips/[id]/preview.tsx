@@ -3,12 +3,15 @@
 import { effectiveMs } from "@klick/video-project-schema";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef } from "react";
+import { cueAt, normalizeText } from "@/lib/editor/captions";
+import { useCaptions } from "@/lib/editor/captions-store";
 import { isMediaItem, type Doc, type Track } from "@/lib/editor/ops";
 import type { SourceMedia } from "@/lib/editor/sources";
 import { useEditor } from "@/lib/editor/store";
 
 type MediaItem = Extract<Track, { kind: "video" | "audio" }>["items"][number];
 type TextItem = Extract<Track, { kind: "text" }>["items"][number];
+type ImageItem = Extract<Track, { kind: "image" }>["items"][number];
 
 /** Elemento de medios activo en `t` para cada pista de video/audio. */
 function activeMedia(doc: Doc, t: number): Array<{ kind: "video" | "audio"; item: MediaItem }> {
@@ -42,6 +45,8 @@ export function Preview({ doc, media }: { doc: Doc; media: Map<string, SourceMed
   const t = useTranslations("editor.preview");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const elements = useRef(new Map<string, HTMLMediaElement>());
+  const images = useRef(new Map<string, HTMLImageElement>());
+  const cues = useCaptions((st) => st.cues);
   const docRef = useRef(doc);
   useEffect(() => {
     docRef.current = doc;
@@ -78,22 +83,56 @@ export function Preview({ doc, media }: { doc: Doc; media: Map<string, SourceMed
       }
     }
 
-    // texto: capa simple (los estilos de plantilla llegan con F1-11/F1-12)
+    // capas de imagen y texto, en el orden del documento (igual que el grafo del render)
+    const k = W / d.canvas.width; // la vista previa es una versión reducida del lienzo
     for (const track of d.timeline.tracks) {
-      if (track.kind !== "text") continue;
-      for (const item of track.items as TextItem[]) {
-        if (now < item.start_ms || now >= item.end_ms) continue;
-        const size = Math.round(H * 0.045);
-        ctx.font = `700 ${size}px system-ui, sans-serif`;
-        ctx.textAlign = item.align ?? "center";
-        ctx.textBaseline = "middle";
-        ctx.lineWidth = Math.max(2, size / 8);
+      if (track.kind === "image") {
+        for (const item of track.items as ImageItem[]) {
+          if (now < item.start_ms || now >= item.end_ms) continue;
+          const img = images.current.get(item.source_id);
+          if (!img || !img.complete || img.naturalWidth === 0) continue;
+          const w = img.naturalWidth * (item.scale ?? 1) * k;
+          const h = img.naturalHeight * (item.scale ?? 1) * k;
+          ctx.drawImage(img, item.position.x * W - w / 2, item.position.y * H - h / 2, w, h);
+        }
+      } else if (track.kind === "text") {
+        for (const item of track.items as TextItem[]) {
+          if (now < item.start_ms || now >= item.end_ms) continue;
+          const size = Math.round(H * 0.05);
+          ctx.font = `700 ${size}px "DejaVu Sans", system-ui, sans-serif`;
+          ctx.textAlign = item.align ?? "center";
+          ctx.textBaseline = "middle";
+          ctx.lineJoin = "round";
+          ctx.lineWidth = 6 * k; // borde de 3 px por lado, como el render
+          ctx.strokeStyle = "#000000";
+          ctx.fillStyle = "#ffffff";
+          const x = item.position.x * W;
+          const y = item.position.y * H;
+          ctx.strokeText(item.text, x, y);
+          ctx.fillText(item.text, x, y);
+        }
+      }
+    }
+
+    // subtítulos manuales: estilo "limpio" dentro de la zona segura (docs/07 §3)
+    if (d.captions) {
+      const cue = cueAt(useCaptions.getState().cues, now);
+      if (cue) {
+        const size = Math.round(H * 0.04);
+        ctx.font = `700 ${size}px "DejaVu Sans", system-ui, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        ctx.lineJoin = "round";
+        ctx.lineWidth = Math.max(2, H * 0.0035 * 2);
         ctx.strokeStyle = "#000000";
         ctx.fillStyle = "#ffffff";
-        const x = item.position.x * W;
-        const y = item.position.y * H;
-        ctx.strokeText(item.text, x, y, W * 0.9);
-        ctx.fillText(item.text, x, y, W * 0.9);
+        const lines = normalizeText(cue.text).split("\n");
+        const bottom = H * (1 - (d.captions.safe_area === "none" ? 0.05 : 0.2));
+        lines.forEach((line, i) => {
+          const y = bottom - (lines.length - 1 - i) * size * 1.2;
+          ctx.strokeText(line, W / 2, y, W * 0.88);
+          ctx.fillText(line, W / 2, y, W * 0.88);
+        });
       }
     }
   }, []);
@@ -127,7 +166,20 @@ export function Preview({ doc, media }: { doc: Doc; media: Map<string, SourceMed
     if (playing) return;
     sync(playhead, false);
     draw();
-  }, [playhead, playing, doc, sync, draw, media]);
+  }, [playhead, playing, doc, sync, draw, media, cues]);
+
+  // Carga las imágenes de las capas (se vuelve a pintar al terminar cada una)
+  useEffect(() => {
+    for (const m of media.values()) {
+      if (m.kind !== "image" || !m.url) continue;
+      if (images.current.get(m.id)?.dataset.url === m.url) continue;
+      const img = new Image();
+      img.dataset.url = m.url;
+      img.onload = () => draw();
+      img.src = m.url;
+      images.current.set(m.id, img);
+    }
+  }, [media, draw]);
 
   // Reproducción: reloj de pared; los medios se corrigen si se desvían
   useEffect(() => {

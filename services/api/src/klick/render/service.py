@@ -94,15 +94,7 @@ class RenderService:
             doc = parse_edit_project(project.document)
         except EditProjectInvalid as exc:
             raise _issues_error(exc.issues) from None
-        issues: list[Issue] = await self._clips.reference_issues(org_id, doc)
-        if doc.captions is not None:
-            # los subtítulos se generan desde `caption_tracks` (F1-11 / F2-07); renderizar sin ellos
-            # entregaría un video distinto al que el usuario ve
-            issues.append(
-                Issue(
-                    "captions_unavailable", "captions", "Los subtítulos aún no se pueden exportar."
-                )
-            )
+        issues: list[Issue] = await self._clips.reference_issues(org_id, doc, clip_id)
         if issues:
             raise _issues_error(issues)
 

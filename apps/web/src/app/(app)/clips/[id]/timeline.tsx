@@ -1,6 +1,6 @@
 "use client";
 
-import { Film, Image as ImageIcon, Music, Type } from "lucide-react";
+import { Film, Image as ImageIcon, Music, Subtitles, Type } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useRef, type PointerEvent as ReactPointerEvent } from "react";
 import { formatDuration } from "@/lib/format";
@@ -18,6 +18,7 @@ import {
   type Track,
 } from "@/lib/editor/ops";
 import type { SourceMedia } from "@/lib/editor/sources";
+import { useCaptions } from "@/lib/editor/captions-store";
 import { useEditor } from "@/lib/editor/store";
 
 const LANE_H = 44;
@@ -48,6 +49,7 @@ export function Timeline({ doc, media }: { doc: Doc; media: Map<string, SourceMe
   const markers = useEditor((s) => s.markers);
   const inMs = useEditor((s) => s.inMs);
   const outMs = useEditor((s) => s.outMs);
+  const cues = useCaptions((s) => s.cues);
   const scroller = useRef<HTMLDivElement | null>(null);
   const drag = useRef<Drag | null>(null);
 
@@ -219,6 +221,45 @@ export function Timeline({ doc, media }: { doc: Doc; media: Map<string, SourceMe
               zoom={zoom}
             />
           ))}
+
+          {/* subtítulos: carril de solo lectura (se editan en el panel izquierdo) */}
+          {doc.captions && (
+            <div className="flex border-b border-border-1" style={{ height: LANE_H }}>
+              <div
+                style={{ width: GUTTER }}
+                className="sticky left-0 z-10 flex shrink-0 items-center gap-1.5 border-r border-border-1 bg-bg-2 px-2 text-xs text-text-2"
+              >
+                <Subtitles className="size-3.5" aria-hidden="true" />
+                {t("track.captions")}
+              </div>
+              <div className="relative flex-1" onPointerDown={seekFromPointer}>
+                {cues.map((cue, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    data-testid={`cue-block-${i}`}
+                    aria-label={`${cue.text} ${formatDuration(cue.start_ms)}–${formatDuration(
+                      cue.end_ms,
+                    )}`}
+                    style={{
+                      left: cue.start_ms * zoom,
+                      width: Math.max(4, (cue.end_ms - cue.start_ms) * zoom),
+                      top: 4,
+                      height: LANE_H - 8,
+                    }}
+                    className="absolute truncate rounded-control border border-border-2 bg-bg-3 px-2 text-left text-xs text-text-1"
+                    onPointerDown={(e) => {
+                      e.stopPropagation();
+                      useEditor.getState().setPlaying(false);
+                      useEditor.getState().seek(cue.start_ms);
+                    }}
+                  >
+                    {cue.text}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* cabezal */}
           <div

@@ -227,6 +227,15 @@ async def _clip_versions(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: Ctx) 
     )
 
 
+async def _caption_tracks(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: Ctx) -> None:
+    await conn.execute(
+        "insert into caption_tracks (id, org_id, clip_id, language) "
+        "values (gen_random_uuid(), $1, $2, 'es')",
+        org_id,
+        await _clip(conn, org_id),
+    )
+
+
 async def _render_presets(conn: asyncpg.Connection, org_id: uuid.UUID, ctx: Ctx) -> None:
     await conn.execute(
         "insert into render_presets (id, org_id, key, width, height, fps) "
@@ -283,6 +292,7 @@ FACTORIES: dict[str, tuple[Kind, str, Factory]] = {
     "uploads": ("tenant", "org_id", _uploads),
     "asset_tags": ("tenant", "org_id", _asset_tags),
     "clips": ("tenant", "org_id", _clips),
+    "caption_tracks": ("tenant", "org_id", _caption_tracks),
     "render_presets": ("reference", "org_id", _render_presets),
     "render_jobs": ("tenant", "org_id", _render_jobs),
     # Consumo facturable: solo inserción (REVOKE + trigger); sin FK a organizations.

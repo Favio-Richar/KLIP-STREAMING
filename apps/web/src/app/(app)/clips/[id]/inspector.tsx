@@ -34,7 +34,10 @@ export function Inspector({
 
   if (!loc) {
     return (
-      <aside className="flex w-72 shrink-0 flex-col gap-3 border-l border-border-1 bg-bg-1 p-3 text-sm">
+      <aside
+        aria-label={t("region")}
+        className="flex w-72 shrink-0 flex-col gap-3 border-l border-border-1 bg-bg-1 p-3 text-sm"
+      >
         <h2 className="text-base font-medium">{t("clip")}</h2>
         <dl className="grid grid-cols-2 gap-y-1 text-text-2">
           <dt>{t("duration")}</dt>
@@ -68,7 +71,10 @@ export function Inspector({
   const inside = playhead > s.start && playhead < s.end;
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col gap-3 overflow-y-auto border-l border-border-1 bg-bg-1 p-3 text-sm">
+    <aside
+      aria-label={t("region")}
+      className="flex w-72 shrink-0 flex-col gap-3 overflow-y-auto border-l border-border-1 bg-bg-1 p-3 text-sm"
+    >
       <h2 className="text-base font-medium">{t(`kind.${track.kind}`)}</h2>
       <dl className="grid grid-cols-2 gap-y-1 text-text-2">
         <dt>{t("start")}</dt>
@@ -141,6 +147,57 @@ export function Inspector({
             </Row>
           </div>
         </>
+      )}
+
+      {(track.kind === "text" || track.kind === "image") && (
+        <>
+          {(["x", "y"] as const).map((axis) => {
+            const pos = (item as { position: { x: number; y: number } }).position;
+            return (
+              <Row
+                key={axis}
+                label={t(axis === "x" ? "posX" : "posY", { value: Math.round(pos[axis] * 100) })}
+              >
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={1}
+                  disabled={!canWrite}
+                  value={Math.round(pos[axis] * 100)}
+                  aria-label={t(axis === "x" ? "posXLabel" : "posYLabel")}
+                  onChange={(e) =>
+                    patch(
+                      { position: { ...pos, [axis]: Number(e.target.value) / 100 } },
+                      `pos${axis}:${id}`,
+                    )
+                  }
+                  onPointerUp={() => useEditor.getState().sealHistory()}
+                  className="w-full accent-[var(--color-accent)]"
+                />
+              </Row>
+            );
+          })}
+        </>
+      )}
+
+      {track.kind === "image" && (
+        <Row
+          label={t("scale", { value: Math.round(((item as { scale?: number }).scale ?? 1) * 100) })}
+        >
+          <input
+            type="range"
+            min={10}
+            max={400}
+            step={5}
+            disabled={!canWrite}
+            value={Math.round(((item as { scale?: number }).scale ?? 1) * 100)}
+            aria-label={t("scaleLabel")}
+            onChange={(e) => patch({ scale: Number(e.target.value) / 100 }, `scale:${id}`)}
+            onPointerUp={() => useEditor.getState().sealHistory()}
+            className="w-full accent-[var(--color-accent)]"
+          />
+        </Row>
       )}
 
       {track.kind === "text" && (

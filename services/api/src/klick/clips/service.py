@@ -18,6 +18,7 @@ from typing import Any, Literal
 from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from klick.captions.models import CaptionTrack, snapshot_of
 from klick.clips.builder import ASPECTS, DEFAULT_ASPECT, MIN_CLIP_MS, initial_document
 from klick.clips.models import Clip, ClipVersion, EditProjectRow
 from klick.core.audit import record_audit
@@ -314,7 +315,9 @@ class ClipService:
                 )
             ).scalar_one()
 
-    async def reference_issues(self, org_id: uuid.UUID, doc: EditProject) -> list[Issue]:
+    async def reference_issues(
+        self, org_id: uuid.UUID, doc: EditProject, clip_id: uuid.UUID | None = None
+    ) -> list[Issue]:
         """Las fuentes deben ser assets reales de esta organización, del tipo y estado correctos."""
         ids = {uuid.UUID(s.asset_id) for s in doc.sources}
         assets = await self._media.assets_by_ids(org_id, ids)
@@ -356,6 +359,24 @@ class ClipService:
                             "El corte termina después del final del archivo original.",
                         )
                     )
+        if doc.captions is not None:
+            async with self._db.tenant_session(org_id) as s:
+                caption_track = (
+                    await s.execute(
+                        select(CaptionTrack).where(
+                            CaptionTrack.id == uuid.UUID(doc.captions.track_id),
+                            CaptionTrack.org_id == org_id,
+                        )
+                    )
+                ).scalar_one_or_none()
+            if caption_track is None or (clip_id is not None and caption_track.clip_id != clip_id):
+                issues.append(
+                    Issue(
+                        "unknown_caption_track",
+                        "captions.track_id",
+                        "La pista de subtítulos no existe en este clip.",
+                    )
+                )
         return issues
 
     async def update_edit_project(
@@ -385,7 +406,7 @@ class ClipService:
             parsed = parse_edit_project(document)
         except EditProjectInvalid as exc:
             raise _issues_error(exc.issues) from None
-        issues = await self.reference_issues(principal.org_id, parsed)
+        issues = await self.reference_issues(principal.org_id, parsed, clip_id)
         if issues:
             raise _issues_error(issues)
 
@@ -425,6 +446,22 @@ class ClipService:
 
     # --------------------------------------------------------------------------- versiones
 
+    async def _captions_snapshot(
+        self, s: AsyncSession, org_id: uuid.UUID, document: dict[str, Any]
+    ) -> dict[str, Any] | None:
+        """Los cues vigentes de la pista que usa el documento (None si no usa subtítulos)."""
+        ref = document.get("captions")
+        if not isinstance(ref, dict) or not isinstance(ref.get("track_id"), str):
+            return None
+        track = (
+            await s.execute(
+                select(CaptionTrack).where(
+                    CaptionTrack.id == uuid.UUID(ref["track_id"]), CaptionTrack.org_id == org_id
+                )
+            )
+        ).scalar_one_or_none()
+        return snapshot_of(track) if track is not None else None
+
     async def create_version(
         self,
         principal: Principal,
@@ -453,11 +490,13 @@ class ClipService:
                     .limit(1)
                 )
             ).scalar_one_or_none()
+            captions = await self._captions_snapshot(s, principal.org_id, project.document)
             if (
                 reuse_if_unchanged
                 and label is None
                 and last is not None
                 and last.document == project.document
+                and last.captions == captions
             ):
                 return last
             version = ClipVersion(
@@ -467,6 +506,7 @@ class ClipService:
                 version=(last.version + 1) if last else 1,
                 schema_version=project.schema_version,
                 document=project.document,
+                captions=captions,
                 label=label.strip() if label and label.strip() else None,
                 created_by=principal.user_id,
             )

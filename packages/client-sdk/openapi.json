@@ -563,6 +563,67 @@
         "title": "ClipUpdate",
         "type": "object"
       },
+      "Cue": {
+        "additionalProperties": false,
+        "properties": {
+          "end_ms": {
+            "maximum": 86400000.0,
+            "minimum": 0.0,
+            "title": "End Ms",
+            "type": "integer"
+          },
+          "start_ms": {
+            "maximum": 86400000.0,
+            "minimum": 0.0,
+            "title": "Start Ms",
+            "type": "integer"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "words": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/Word"
+                },
+                "maxItems": 40,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Words"
+          }
+        },
+        "required": [
+          "start_ms",
+          "end_ms",
+          "text"
+        ],
+        "title": "Cue",
+        "type": "object"
+      },
+      "CuesReplace": {
+        "additionalProperties": false,
+        "properties": {
+          "cues": {
+            "items": {
+              "$ref": "#/components/schemas/Cue"
+            },
+            "maxItems": 1001,
+            "title": "Cues",
+            "type": "array"
+          }
+        },
+        "required": [
+          "cues"
+        ],
+        "title": "CuesReplace",
+        "type": "object"
+      },
       "DerivativeOut": {
         "properties": {
           "created_at": {
@@ -2219,6 +2280,88 @@
         "title": "TokenOut",
         "type": "object"
       },
+      "TrackCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "language": {
+            "default": "es",
+            "pattern": "^[a-z]{2,3}(-[A-Za-z]{2,4})?$",
+            "title": "Language",
+            "type": "string"
+          }
+        },
+        "title": "TrackCreate",
+        "type": "object"
+      },
+      "TrackOut": {
+        "properties": {
+          "clip_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clip Id"
+          },
+          "cues": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Cues",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "language": {
+            "title": "Language",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "required": [
+          "id",
+          "clip_id",
+          "language",
+          "source",
+          "status",
+          "revision",
+          "cues",
+          "updated_at"
+        ],
+        "title": "TrackOut",
+        "type": "object"
+      },
       "UploadInfo": {
         "properties": {
           "asset_id": {
@@ -2630,6 +2773,36 @@
           "next_before"
         ],
         "title": "VersionPage",
+        "type": "object"
+      },
+      "Word": {
+        "additionalProperties": false,
+        "properties": {
+          "end_ms": {
+            "maximum": 86400000.0,
+            "minimum": 0.0,
+            "title": "End Ms",
+            "type": "integer"
+          },
+          "start_ms": {
+            "maximum": 86400000.0,
+            "minimum": 0.0,
+            "title": "Start Ms",
+            "type": "integer"
+          },
+          "text": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start_ms",
+          "end_ms",
+          "text"
+        ],
+        "title": "Word",
         "type": "object"
       }
     }
@@ -3859,6 +4032,118 @@
         ]
       }
     },
+    "/api/v1/caption-tracks/{track_id}": {
+      "get": {
+        "operationId": "get_track_api_v1_caption_tracks__track_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "track_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Track Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrackOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Track",
+        "tags": [
+          "captions"
+        ]
+      }
+    },
+    "/api/v1/caption-tracks/{track_id}/cues": {
+      "put": {
+        "operationId": "replace_cues_api_v1_caption_tracks__track_id__cues_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "track_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Track Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CuesReplace"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrackOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Replace Cues",
+        "tags": [
+          "captions"
+        ]
+      }
+    },
     "/api/v1/clips": {
       "get": {
         "operationId": "list_clips_api_v1_clips_get",
@@ -4157,6 +4442,104 @@
         "summary": "Update Clip",
         "tags": [
           "clips"
+        ]
+      }
+    },
+    "/api/v1/clips/{clip_id}/caption-tracks": {
+      "get": {
+        "operationId": "list_tracks_api_v1_clips__clip_id__caption_tracks_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "clip_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Clip Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TrackOut"
+                  },
+                  "title": "Response List Tracks Api V1 Clips  Clip Id  Caption Tracks Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Tracks",
+        "tags": [
+          "captions"
+        ]
+      },
+      "post": {
+        "operationId": "create_track_api_v1_clips__clip_id__caption_tracks_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "clip_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Clip Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrackCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrackOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Track",
+        "tags": [
+          "captions"
         ]
       }
     },

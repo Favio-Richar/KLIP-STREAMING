@@ -80,3 +80,36 @@ export async function saveEditProject(
   );
   return { doc: parseDocument(res.document), revision: res.revision };
 }
+
+// ------------------------------------------------------------------------------ subtítulos
+
+export type CaptionTrack = Schemas["TrackOut"];
+
+export async function fetchCaptionTrack(trackId: string): Promise<CaptionTrack> {
+  return unwrap(
+    api.GET("/api/v1/caption-tracks/{track_id}", { params: { path: { track_id: trackId } } }),
+  );
+}
+
+export async function createCaptionTrack(clipId: string): Promise<CaptionTrack> {
+  return unwrap(
+    api.POST("/api/v1/clips/{clip_id}/caption-tracks", {
+      params: { path: { clip_id: clipId } },
+      body: { language: "es" },
+    }),
+  );
+}
+
+export async function saveCaptionCues(
+  trackId: string,
+  cues: unknown[],
+  revision: number,
+): Promise<CaptionTrack> {
+  return unwrap(
+    api.PUT("/api/v1/caption-tracks/{track_id}/cues", {
+      params: { path: { track_id: trackId }, header: { "If-Match": `"${revision}"` } },
+      // el servidor valida cada cue (`captions/cues.py`); el tipo generado es un registro abierto
+      body: { cues: cues as never },
+    }),
+  );
+}

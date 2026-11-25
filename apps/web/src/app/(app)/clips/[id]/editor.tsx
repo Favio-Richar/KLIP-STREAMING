@@ -30,20 +30,25 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ApiProblem, api, unwrap } from "@/lib/api";
-import { useClip, useEditProject, type RenderJob } from "@/lib/clips";
+import { fetchCaptionTrack, useClip, useEditProject, type RenderJob } from "@/lib/clips";
 import { canRedo, canUndo } from "@/lib/editor/history";
-import { splitItem, type Doc } from "@/lib/editor/ops";
+import { setCaptionsTrack, splitItem, type Doc } from "@/lib/editor/ops";
 import { uniqueId, useSourceMedia } from "@/lib/editor/sources";
 import { useEditor, type SaveState } from "@/lib/editor/store";
+import { useCaptions } from "@/lib/editor/captions-store";
+import type { Cue } from "@/lib/editor/captions";
 import { useAutosave } from "@/lib/editor/use-autosave";
+import { useCaptionsAutosave } from "@/lib/editor/use-captions-autosave";
 import { useShortcuts } from "@/lib/editor/use-shortcuts";
 import { can, useActiveOrg } from "@/lib/queries";
 import { useErrorMessage } from "@/lib/use-error-message";
 import { Inspector } from "./inspector";
+import { SidePanel } from "./side-panel";
 import { Preview } from "./preview";
 import { Timeline } from "./timeline";
 
-const SAVE_TONE: Record<SaveState, Tone> = {
+const SAVE_TONE: Record<SaveState | "invalid", Tone> = {
+  invalid: "danger",
   saved: "success",
   dirty: "neutral",
   saving: "info",
@@ -118,6 +123,7 @@ function Loaded({
   canWrite: boolean;
 }) {
   const t = useTranslations("editor");
+  const errorMessage = useErrorMessage();
   const loadedId = useEditor((s) => s.clipId);
   const ready = loadedId === id;
   useEffect(() => {
@@ -128,17 +134,56 @@ function Loaded({
   }, [id]);
 
   const doc = useEditor((s) => s.history.present);
-  const save = useEditor((s) => s.save);
+  const docSave = useEditor((s) => s.save);
+  const captionSave = useCaptions((s) => s.save);
+  const captionsReady = useCaptions((s) => s.clipId) === id;
+  // un solo indicador: manda el peor estado entre el documento y los subtítulos
+  const save: SaveState | "invalid" =
+    docSave !== "saved" ? docSave : captionSave === "saved" ? "saved" : captionSave;
   const history = useEditor((s) => s.history);
   const playing = useEditor((s) => s.playing);
   const playhead = useEditor((s) => s.playheadMs);
   const snapping = useEditor((s) => s.snapping);
   const media = useSourceMedia(orgId, ready ? doc : null);
-  const { flush } = useAutosave(id, orgId);
+  const { flush: flushDoc } = useAutosave(id, orgId);
+  const { flush: flushCaptions } = useCaptionsAutosave();
+  /** Guarda subtítulos y documento; `false` si algo no quedó guardado (no se debe exportar). */
+  const flush = useCallback(async (): Promise<boolean> => {
+    const captionsOk = await flushCaptions(); // primero: la versión congela sus cues
+    await flushDoc();
+    return captionsOk && useEditor.getState().save === "saved";
+  }, [flushCaptions, flushDoc]);
+  const trackRef = initial.doc.captions?.track_id ?? null;
+  const trackQuery = useQuery({
+    queryKey: ["caption-track", orgId, id, trackRef],
+    enabled: !!trackRef,
+    staleTime: Number.POSITIVE_INFINITY,
+    gcTime: 0,
+    retry: (count, err) => !(err instanceof ApiProblem && err.status === 404) && count < 2,
+    queryFn: () => fetchCaptionTrack(trackRef as string),
+  });
+  const loadedTrack = trackQuery.data;
+  useEffect(() => {
+    if (!trackRef) useCaptions.getState().load(id, null);
+    else if (trackQuery.error instanceof ApiProblem && trackQuery.error.status === 404) {
+      // la pista citada ya no existe: se desvincula para poder crear otra
+      useCaptions.getState().load(id, null);
+      useEditor.getState().apply((d) => setCaptionsTrack(d, null));
+    } else if (loadedTrack) {
+      useCaptions.getState().load(id, {
+        id: loadedTrack.id,
+        revision: loadedTrack.revision,
+        cues: loadedTrack.cues as unknown as Cue[],
+      });
+    }
+  }, [id, trackRef, loadedTrack, trackQuery.error]);
   const [render, setRender] = useState<RenderJob | null>(null);
 
   const saveVersion = useCallback(async () => {
-    await flush();
+    if (!(await flush())) {
+      toast.error(t("notSaved"));
+      return;
+    }
     try {
       await unwrap(
         api.POST("/api/v1/clips/{clip_id}/versions", {
@@ -154,7 +199,7 @@ function Loaded({
 
   const startRender = useMutation({
     mutationFn: async () => {
-      await flush();
+      if (!(await flush())) throw new Error("not_saved");
       return unwrap(
         api.POST("/api/v1/clips/{clip_id}/render", {
           params: { path: { clip_id: id } },
@@ -163,7 +208,10 @@ function Loaded({
       );
     },
     onSuccess: (job) => setRender(job),
-    onError: () => toast.error(t("export.failed")),
+    onError: (e) =>
+      toast.error(
+        e instanceof Error && e.message === "not_saved" ? t("notSaved") : t("export.failed"),
+      ),
   });
   const exportClip = useCallback(() => {
     if (canWrite && !startRender.isPending) startRender.mutate();
@@ -224,7 +272,7 @@ function Loaded({
         <Button
           size="dense"
           variant="secondary"
-          disabled={!canWrite || save === "conflict"}
+          disabled={!canWrite || save === "conflict" || save === "invalid"}
           onClick={() => void saveVersion()}
         >
           {t("saveVersion")}
@@ -233,7 +281,7 @@ function Loaded({
           size="dense"
           variant="primary"
           icon={<Download className="size-3.5" />}
-          disabled={!canWrite || save === "conflict"}
+          disabled={!canWrite || save === "conflict" || save === "invalid"}
           loading={startRender.isPending}
           onClick={exportClip}
         >
@@ -254,6 +302,21 @@ function Loaded({
       {render && <ExportStatus job={render} onChange={setRender} />}
 
       <div className="flex min-h-0 flex-1">
+        {captionsReady ? (
+          <SidePanel clipId={id} orgId={orgId} doc={doc} canWrite={canWrite} />
+        ) : trackQuery.isError &&
+          !(trackQuery.error instanceof ApiProblem && trackQuery.error.status === 404) ? (
+          <div className="w-72 shrink-0 border-r border-border-1 bg-bg-1 p-3">
+            <ErrorState
+              title={t("captionsLoadFailed")}
+              description={errorMessage(trackQuery.error)}
+              retryLabel={t("retry")}
+              onRetry={() => void trackQuery.refetch()}
+            />
+          </div>
+        ) : (
+          <Skeleton className="w-72 shrink-0" aria-busy="true" />
+        )}
         <div className="flex min-w-0 flex-1 flex-col">
           <Preview doc={doc} media={media} />
           <div className="flex h-10 shrink-0 items-center gap-2 border-t border-border-1 bg-bg-1 px-3">

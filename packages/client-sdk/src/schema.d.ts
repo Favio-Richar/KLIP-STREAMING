@@ -417,6 +417,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/caption-tracks/{track_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Track */
+    get: operations["get_track_api_v1_caption_tracks__track_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/caption-tracks/{track_id}/cues": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Replace Cues */
+    put: operations["replace_cues_api_v1_caption_tracks__track_id__cues_put"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/clips": {
     parameters: {
       query?: never;
@@ -452,6 +486,24 @@ export interface paths {
     head?: never;
     /** Update Clip */
     patch: operations["update_clip_api_v1_clips__clip_id__patch"];
+    trace?: never;
+  };
+  "/api/v1/clips/{clip_id}/caption-tracks": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Tracks */
+    get: operations["list_tracks_api_v1_clips__clip_id__caption_tracks_get"];
+    put?: never;
+    /** Create Track */
+    post: operations["create_track_api_v1_clips__clip_id__caption_tracks_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   "/api/v1/clips/{clip_id}/edit-project": {
@@ -1168,6 +1220,22 @@ export interface components {
       /** Title */
       title?: string | null;
     };
+    /** Cue */
+    Cue: {
+      /** End Ms */
+      end_ms: number;
+      /** Start Ms */
+      start_ms: number;
+      /** Text */
+      text: string;
+      /** Words */
+      words?: components["schemas"]["Word"][] | null;
+    };
+    /** CuesReplace */
+    CuesReplace: {
+      /** Cues */
+      cues: components["schemas"]["Cue"][];
+    };
     /** DerivativeOut */
     DerivativeOut: {
       /**
@@ -1792,6 +1860,38 @@ export interface components {
       /** Scopes */
       scopes: string[];
     };
+    /** TrackCreate */
+    TrackCreate: {
+      /**
+       * Language
+       * @default es
+       */
+      language: string;
+    };
+    /** TrackOut */
+    TrackOut: {
+      /** Clip Id */
+      clip_id: string | null;
+      /** Cues */
+      cues: {
+        [key: string]: unknown;
+      }[];
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Language */
+      language: string;
+      /** Revision */
+      revision: number;
+      /** Source */
+      source: string;
+      /** Status */
+      status: string;
+      /** Updated At */
+      updated_at: string | null;
+    };
     /** UploadInfo */
     UploadInfo: {
       /**
@@ -1948,6 +2048,15 @@ export interface components {
       items: components["schemas"]["VersionOut"][];
       /** Next Before */
       next_before: number | null;
+    };
+    /** Word */
+    Word: {
+      /** End Ms */
+      end_ms: number;
+      /** Start Ms */
+      start_ms: number;
+      /** Text */
+      text: string;
     };
   };
   responses: never;
@@ -2759,6 +2868,74 @@ export interface operations {
       };
     };
   };
+  get_track_api_v1_caption_tracks__track_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        track_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TrackOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  replace_cues_api_v1_caption_tracks__track_id__cues_put: {
+    parameters: {
+      query?: never;
+      header?: {
+        "If-Match"?: string | null;
+      };
+      path: {
+        track_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CuesReplace"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TrackOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   list_clips_api_v1_clips_get: {
     parameters: {
       query?: {
@@ -2910,6 +3087,72 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ClipOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_tracks_api_v1_clips__clip_id__caption_tracks_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        clip_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TrackOut"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  create_track_api_v1_clips__clip_id__caption_tracks_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        clip_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TrackCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TrackOut"];
         };
       };
       /** @description Validation Error */

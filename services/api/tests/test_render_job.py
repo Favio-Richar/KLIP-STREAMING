@@ -392,3 +392,74 @@ async def test_a_crash_after_uploading_but_before_committing_is_idempotent(
     ]["n"] == 1
     assert (await sql(api, "select count(*) as n from usage_records"))[0]["n"] == 1
     assert len(await sql(api, "select key from storage_objects where key like '%/renders/%'")) == 1
+
+
+# ------------------------------------------------------------------------------ subtítulos
+
+
+def _frame_gray(video: Path, at_s: float, w: int = 270, h: int = 480) -> bytes:
+    """Un cuadro del video en escala de grises (w×h bytes)."""
+    out = subprocess.run(  # noqa: S603
+        ["ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error",  # noqa: S607
+         "-ss", str(at_s), "-i", str(video), "-frames:v", "1",
+         "-vf", f"scale={w}:{h},format=gray", "-f", "rawvideo", "-"],
+        check=True, capture_output=True,
+    )  # fmt: skip
+    assert len(out.stdout) == w * h
+    return out.stdout
+
+
+def _bright_in_caption_band(frame: bytes, w: int = 270, h: int = 480) -> int:
+    """Píxeles casi blancos en la franja inferior donde caen los subtítulos (zona segura)."""
+    count = 0
+    for y in range(int(h * 0.62), int(h * 0.82)):
+        row = frame[y * w : (y + 1) * w]
+        count += sum(1 for p in row if p >= 250)
+    return count
+
+
+async def test_captions_are_burned_into_the_exported_video_and_follow_their_timing(
+    api: ApiHarness, users: Users, samples: dict[str, Path], scratch: Path, tmp_path: Path
+) -> None:
+    ana, org, asset = await _ready_video(api, users, samples, "long.mp4")
+    clip = await _clip(ana, org, asset, 0, 4000)
+    track = (await ana.call("POST", f"/clips/{clip}/caption-tracks", org=org, json={})).json()
+    cues = [{"start_ms": 1000, "end_ms": 2000, "text": "SUBTITULO DE PRUEBA"}]
+    put = await ana.call(
+        "PUT", f"/caption-tracks/{track['id']}/cues", org=org, json={"cues": cues},
+        headers={"If-Match": '"1"'},
+    )  # fmt: skip
+    assert put.status_code == 200, put.text
+    project = (await ana.call("GET", f"/clips/{clip}/edit-project", org=org)).json()
+    document = project["document"]
+    document["captions"] = {"track_id": track["id"]}
+    saved = await ana.call(
+        "PATCH", f"/clips/{clip}/edit-project", org=org, json={"document": document},
+        headers={"If-Match": f'"{project["revision"]}"'},
+    )  # fmt: skip
+    assert saved.status_code == 200, saved.text
+
+    job = await _request(ana, org, clip)
+    assert await _execute(api, org, job["id"]) == "succeeded"
+    state = await _state(api, job["id"])
+    url = (
+        await ana.call("GET", f"/assets/{state['output_asset_id']}/download-url", org=org)
+    ).json()["url"]
+    video = tmp_path / "captioned.mp4"
+    async with httpx.AsyncClient(timeout=120) as http:
+        video.write_bytes((await http.get(url)).content)
+
+    inside = _bright_in_caption_band(_frame_gray(video, 1.5))
+    before = _bright_in_caption_band(_frame_gray(video, 0.4))
+    after = _bright_in_caption_band(_frame_gray(video, 3.0))
+    assert inside > before + 40 and inside > after + 40, (before, inside, after)
+
+    # cambiar el texto crea una versión y un render nuevos; el anterior conserva su resultado
+    await ana.call(
+        "PUT", f"/caption-tracks/{track['id']}/cues", org=org,
+        json={"cues": [{"start_ms": 0, "end_ms": 500, "text": "OTRO"}]},
+        headers={"If-Match": '"2"'},
+    )  # fmt: skip
+    second = await _request(ana, org, clip)
+    assert second["id"] != job["id"] and second["clip_version_id"] != job["clip_version_id"]
+    assert (await _state(api, job["id"]))["status"] == "succeeded"

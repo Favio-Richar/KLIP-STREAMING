@@ -515,7 +515,8 @@
       "dirty": "Unsaved",
       "saving": "Saving…",
       "error": "Save failed",
-      "conflict": "Conflict"
+      "conflict": "Conflict",
+      "invalid": "Fix the captions"
     },
     "export": {
       "action": "Export",
@@ -541,7 +542,8 @@
         "video": "Video",
         "audio": "Audio",
         "text": "Text",
-        "image": "Image"
+        "image": "Image",
+        "captions": "Captions"
       }
     },
     "inspector": {
@@ -578,7 +580,59 @@
         "right": "Right"
       },
       "split": "Split",
-      "delete": "Delete"
-    }
+      "delete": "Delete",
+      "posX": "Horizontal position: {value}%",
+      "posXLabel": "Horizontal position",
+      "posY": "Vertical position: {value}%",
+      "posYLabel": "Vertical position",
+      "scale": "Size: {value}%",
+      "scaleLabel": "Size",
+      "region": "Inspector"
+    },
+    "side": {
+      "tabs": "Tools",
+      "text": "Text",
+      "images": "Images",
+      "captions": "Captions",
+      "addText": "Add text",
+      "newText": "New text",
+      "noText": "No text yet. Add one at the playhead.",
+      "noImages": "No images",
+      "noImagesBody": "Upload an image to the library to use it as a layer.",
+      "addImage": "Add image {name}",
+      "noCaptions": "No captions",
+      "noCaptionsBody": "Create a track to write captions by hand.",
+      "createCaptions": "Create captions",
+      "createFailed": "Couldn't create the caption track",
+      "addCue": "Add at playhead",
+      "noRoom": "No free space at this point",
+      "noCues": "No captions yet. Add the first one at the playhead.",
+      "cueList": "Captions",
+      "cueStart": "Caption {n} start (s)",
+      "cueEnd": "Caption {n} end (s)",
+      "cueText": "Caption {n} text",
+      "seekCue": "Go to caption {n}",
+      "removeCue": "Delete caption {n}",
+      "conflict": "Another session changed the captions. Reload to see the latest version.",
+      "state": {
+        "saved": "Saved",
+        "dirty": "Unsaved",
+        "saving": "Saving…",
+        "error": "Save failed",
+        "conflict": "Conflict",
+        "invalid": "Has errors"
+      },
+      "issue": {
+        "emptyText": "Text can't be empty.",
+        "textTooLong": "At most 200 characters.",
+        "invalidRange": "The end must be after the start.",
+        "overlap": "Overlaps another caption.",
+        "tooManyLines": "At most 2 lines.",
+        "lineTooLong": "At most 60 characters per line."
+      },
+      "beyondEnd": "Ends after the clip: it will be trimmed on export."
+    },
+    "notSaved": "There are unsaved changes. Wait a moment and try again.",
+    "captionsLoadFailed": "Couldn't load the captions"
   }
 }

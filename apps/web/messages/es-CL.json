@@ -515,7 +515,8 @@
       "dirty": "Sin guardar",
       "saving": "Guardando…",
       "error": "Error al guardar",
-      "conflict": "Conflicto"
+      "conflict": "Conflicto",
+      "invalid": "Corrige los subtítulos"
     },
     "export": {
       "action": "Exportar",
@@ -541,7 +542,8 @@
         "video": "Video",
         "audio": "Audio",
         "text": "Texto",
-        "image": "Imagen"
+        "image": "Imagen",
+        "captions": "Subtítulos"
       }
     },
     "inspector": {
@@ -578,7 +580,59 @@
         "right": "Derecha"
       },
       "split": "Dividir",
-      "delete": "Eliminar"
-    }
+      "delete": "Eliminar",
+      "posX": "Posición horizontal: {value} %",
+      "posXLabel": "Posición horizontal",
+      "posY": "Posición vertical: {value} %",
+      "posYLabel": "Posición vertical",
+      "scale": "Tamaño: {value} %",
+      "scaleLabel": "Tamaño",
+      "region": "Inspector"
+    },
+    "side": {
+      "tabs": "Herramientas",
+      "text": "Texto",
+      "images": "Imágenes",
+      "captions": "Subtítulos",
+      "addText": "Añadir texto",
+      "newText": "Texto nuevo",
+      "noText": "Aún no hay textos. Añade uno en la posición del cabezal.",
+      "noImages": "No hay imágenes",
+      "noImagesBody": "Sube una imagen a la biblioteca para usarla como capa.",
+      "addImage": "Añadir imagen {name}",
+      "noCaptions": "Sin subtítulos",
+      "noCaptionsBody": "Crea una pista para escribir subtítulos a mano.",
+      "createCaptions": "Crear subtítulos",
+      "createFailed": "No se pudo crear la pista de subtítulos",
+      "addCue": "Añadir en el cabezal",
+      "noRoom": "No hay espacio libre en este punto",
+      "noCues": "Aún no hay subtítulos. Añade el primero en la posición del cabezal.",
+      "cueList": "Subtítulos",
+      "cueStart": "Inicio del subtítulo {n} (s)",
+      "cueEnd": "Fin del subtítulo {n} (s)",
+      "cueText": "Texto del subtítulo {n}",
+      "seekCue": "Ir al subtítulo {n}",
+      "removeCue": "Eliminar subtítulo {n}",
+      "conflict": "Otra sesión cambió los subtítulos. Recarga para ver la última versión.",
+      "state": {
+        "saved": "Guardado",
+        "dirty": "Sin guardar",
+        "saving": "Guardando…",
+        "error": "Error al guardar",
+        "conflict": "Conflicto",
+        "invalid": "Hay errores"
+      },
+      "issue": {
+        "emptyText": "El texto no puede estar vacío.",
+        "textTooLong": "Máximo 200 caracteres.",
+        "invalidRange": "El fin debe ser posterior al inicio.",
+        "overlap": "Se solapa con otro subtítulo.",
+        "tooManyLines": "Máximo 2 líneas.",
+        "lineTooLong": "Máximo 60 caracteres por línea."
+      },
+      "beyondEnd": "Termina después del final del clip: se recortará al exportar."
+    },
+    "notSaved": "Hay cambios sin guardar. Espera un momento e inténtalo de nuevo.",
+    "captionsLoadFailed": "No se pudieron cargar los subtítulos"
   }
 }

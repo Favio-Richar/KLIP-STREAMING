@@ -133,24 +133,19 @@ async def test_render_request_validation(api: ApiHarness, users: Users) -> None:
     assert (await _render(ana, org, clip["id"], extra=1)).status_code == 422
     assert (await _render(ana, org, str(uuid.uuid4()))).status_code == 404
 
-    # subtítulos: todavía no se pueden exportar (llegan con F1-11): se avisa, no se ignora
+    # un documento que cita una pista de subtítulos inexistente no se puede guardar
     doc = (await ana.call("GET", f"/clips/{clip['id']}/edit-project", org=org)).json()["document"]
     doc["captions"] = {"track_id": str(uuid.uuid4())}
-    saved = await ana.call(
+    ghost = await ana.call(
         "PATCH",
         f"/clips/{clip['id']}/edit-project",
         org=org,
         json={"document": doc},
         headers={"If-Match": '"1"'},
     )
-    assert saved.status_code == 200
-    caps = await _render(ana, org, clip["id"])
-    assert caps.status_code == 422 and {e["code"] for e in caps.json()["errors"]} == {
-        "captions_unavailable"
-    }
-    assert (await sql(api, "select count(*) as n from render_jobs"))[0][
-        "n"
-    ] == 0  # nada quedó a medias
+    assert ghost.status_code == 422
+    assert {e["code"] for e in ghost.json()["errors"]} == {"unknown_caption_track"}
+    assert (await sql(api, "select count(*) as n from render_jobs"))[0]["n"] == 0
 
 
 # ----------------------------------------------------------------------------- cancelar
